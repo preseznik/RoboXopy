@@ -796,4 +796,85 @@
         <Setter Property="FontSize" Value="13" />
     </Style>
 
+    <!-- ═══ Charts ═══════════════════════════════════════════════════════ -->
+    <!-- Data colours: mid-tones that read on light and dark surfaces, stay distinct from
+         whatever the system accent is, and remain a blue/vermilion pair for colour-blind users. -->
+    <SolidColorBrush x:Key="ChartCopiedBrush" Color="#3B8EDB" />
+    <SolidColorBrush x:Key="ChartRemovedBrush" Color="#E2654D" />
+    <!-- Neutral greys with alpha so they sit lightly on both themes: untouched files recede, kept extras a step stronger. -->
+    <SolidColorBrush x:Key="ChartUnchangedBrush" Color="#48808080" />
+    <SolidColorBrush x:Key="ChartKeptBrush" Color="#A0808080" />
+
+    <Style TargetType="c:BreakdownBar">
+        <Setter Property="UnchangedBrush" Value="{StaticResource ChartUnchangedBrush}" />
+        <Setter Property="CopiedBrush" Value="{StaticResource ChartCopiedBrush}" />
+        <Setter Property="RemovedBrush" Value="{StaticResource ChartRemovedBrush}" />
+        <Setter Property="KeptBrush" Value="{StaticResource ChartKeptBrush}" />
+        <Setter Property="MismatchBrush" Value="{DynamicResource SystemFillColorCautionBrush}" />
+        <Setter Property="FailedBrush" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+    </Style>
+
+    <Style TargetType="c:RunHistoryChart">
+        <Setter Property="CopiedBrush" Value="{StaticResource ChartCopiedBrush}" />
+        <Setter Property="RemovedBrush" Value="{StaticResource ChartRemovedBrush}" />
+        <Setter Property="SourceBrush" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        <Setter Property="GridBrush" Value="{DynamicResource DividerStrokeColorDefaultBrush}" />
+        <Setter Property="BaselineBrush" Value="{DynamicResource ControlStrongStrokeColorDefaultBrush}" />
+        <Setter Property="AxisTextBrush" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        <Setter Property="FailureBrush" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+        <Setter Property="WarningBrush" Value="{DynamicResource SystemFillColorCautionBrush}" />
+        <Setter Property="HighlightBrush" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+        <Setter Property="FocusBrush" Value="{DynamicResource FocusStrokeColorOuterBrush}" />
+        <Setter Property="SurfaceBrush" Value="{DynamicResource SolidBackgroundFillColorTertiaryBrush}" />
+    </Style>
+
+    <!-- Figure in a KPI strip: caption label, value, secondary detail. -->
+    <Style x:Key="KpiLabelStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+    </Style>
+    <Style x:Key="KpiValueStyle" TargetType="TextBlock" BasedOn="{StaticResource SubtitleTextBlockStyle}">
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="LineHeight" Value="24" />
+        <Setter Property="Margin" Value="0,1,0,0" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+    <Style x:Key="KpiDetailStyle" TargetType="TextBlock" BasedOn="{StaticResource KpiLabelStyle}">
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <!-- Legend entry: a swatch followed by a caption. -->
+    <Style x:Key="LegendTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="6,0,18,0" />
+    </Style>
+    <Style x:Key="LegendSwatchStyle" TargetType="Border">
+        <Setter Property="Width" Value="10" />
+        <Setter Property="Height" Value="10" />
+        <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Legend swatch coloured by a BreakdownSegment's Kind. -->
+    <Style x:Key="BreakdownSwatchStyle" TargetType="Border" BasedOn="{StaticResource LegendSwatchStyle}">
+        <Setter Property="Background" Value="{StaticResource ChartUnchangedBrush}" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding Kind}" Value="Copied">
+                <Setter Property="Background" Value="{StaticResource ChartCopiedBrush}" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Kind}" Value="Removed">
+                <Setter Property="Background" Value="{StaticResource ChartRemovedBrush}" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Kind}" Value="Kept">
+                <Setter Property="Background" Value="{StaticResource ChartKeptBrush}" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Kind}" Value="Mismatch">
+                <Setter Property="Background" Value="{DynamicResource SystemFillColorCautionBrush}" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Kind}" Value="Failed">
+                <Setter Property="Background" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
 </ResourceDictionary>

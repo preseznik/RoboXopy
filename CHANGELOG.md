@@ -4,6 +4,32 @@ All notable changes to RoboXopy are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-10
+
+### Added
+
+- **Activity chart** on each profile's History tab. Each run shows what it copied (bars up) and removed (bars down), with a line for the source's total size or file count.
+  - Switch between **Size** and **Files**, and choose the last 10, 30 or 100 runs or all runs. **Include previews** adds preview runs as outlined bars.
+  - Totals for the range are shown above the chart: copied, removed, runs (and how many failed), average duration, and the source's current size with its change over the range.
+  - Failed runs and runs with warnings or unusual changes are marked. A run far larger than the rest is drawn with a break so the others stay readable.
+  - Hover over a run (or use the arrow keys) for its details. Click a run to find it in the list below.
+- **Breakdown bar** in the run output. It shows how the run's files split into unchanged, copied (or to copy), removed (or to remove) and, when there are any, kept extras, mismatched and failed files, with file counts and sizes.
+- **Unusual runs**. RoboXopy compares each run and preview with the profile's recent runs and points out:
+  - a source that is empty or much smaller than usual (for example a disconnected drive or a renamed folder);
+  - a mirror or purge that removes far more than usual, or a large share of the destination;
+  - far more copied than usual.
+  These show in the run output, in the history, and in the log.
+- **Run** asks for confirmation when the latest preview of the same command warned about something unusual, such as a mirror about to remove far more than usual or a source that shrank. Scheduled runs aren't affected.
+
+### Changed
+
+- **Open log** is now next to the run status in the output panel.
+- The green result bar is no longer shown after a successful run when the breakdown already says the same thing.
+
+### Fixed
+
+- Choosing an option in a group of radio buttons (such as the copy mode) could clear the same option in another profile.
+
 ## [1.1.3] - 2026-10-10
 
 ### Fixed

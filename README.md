@@ -10,11 +10,12 @@ Built with WPF on .NET 10 and the Windows 11 (Fluent) theme. Light, dark and sys
 - **Filters**: include and exclude file patterns, excluded folders, file age and size limits, the archive attribute, and change-type filters (older, newer, changed, extra, lonely, same, tweaked).
 - **Copy options**: which file and folder data to copy (`/COPY`, `/DCOPY`), multithreading (`/MT`), restartable and backup modes, unbuffered I/O, compression, junction and symlink handling, FAT time and DST tolerance, and inter-packet gap.
 - **Retry and logging**: `/R`, `/W`, log verbosity, and extra raw switches. Every run writes a full robocopy log.
-- **Live output**: progress, file list, a summary that matches robocopy's totals, and the exact command line, which you can copy.
+- **Live output**: progress, file list, a summary that matches robocopy's totals, a breakdown bar of unchanged, copied and removed files, and the exact command line, which you can copy.
 - **Schedules**: interval, daily, weekly or at log-on. Two runners are available:
   - **RoboXopy (in-app)**: runs while RoboXopy is open or in the notification area. "Start with Windows" keeps it running in the background.
   - **Windows Task Scheduler**: registers a task under `\RoboXopy\` for your account, so it runs even when RoboXopy is closed.
-- **History** for each profile, with the outcome, trigger, totals, duration and a link to the log.
+- **History** for each profile, with the outcome, trigger, totals, duration and a link to the log. An **Activity** chart shows how much each run copied and removed over time (by size or file count), next to the source's total.
+- **Unusual-run checks**: each run and preview is compared with the profile's recent runs. A source that suddenly shrank, a mirror that would remove far more than usual, or an unusually large copy is pointed out. After a preview like that, **Run** asks for confirmation first.
 - **Notifications** when a sync finishes, or only when it has problems.
 - **Updates**: RoboXopy checks GitHub for a new release once a day (Settings › Updates; this can be turned off). When one is available it can download, verify and install it, then reopen.
 - **Import and export**: profiles can be exported to and imported from JSON. **Import › Robocopy batch file** turns an existing `.bat` or `.cmd` that runs robocopy into a profile. A wizard shows the command it found and lets you pick one when the file has several. It lists how each switch was imported (and which weren't, such as `/LOG` or `/JOB`), and lets you name the profile and check the folders before it's created. Relative paths, `%~dp0`, `cd`/`pushd` and `^` line continuations are resolved.

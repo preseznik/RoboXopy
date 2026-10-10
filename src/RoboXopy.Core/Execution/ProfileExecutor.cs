@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using RoboXopy.Core.Insights;
 using RoboXopy.Core.Models;
 using RoboXopy.Core.Robocopy;
 using RoboXopy.Core.Storage;
@@ -105,14 +106,33 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
         record.Summary = RobocopyOutputParser.ParseSummary(result.Lines.Where(l => RobocopyOutputParser.Parse(l).Kind != OutputLineKind.Progress).ToList());
         var outcome = RobocopyExitCode.ToOutcome(result.ExitCode);
         var message = RobocopyExitCode.Describe(result.ExitCode, request.DryRun, record.PurgesExtras);
+        record.Outcome = outcome;
+        record.Findings = AnalyzeFindings(record);
 
         lock (logSync)
         {
             log.WriteLine();
+            foreach (var finding in record.Findings ?? [])
+            {
+                log.WriteLine($"RoboXopy: {(finding.Severity == FindingSeverity.Warning ? "unusual" : "note")} – {finding.Message}");
+            }
             log.WriteLine($"RoboXopy: finished in {stopwatch.Elapsed:hh\\:mm\\:ss} with exit code {result.ExitCode} – {message}");
         }
 
         return Finish(record, result.ExitCode, outcome, message, retain: appSettings.LogRetentionCount);
+    }
+
+    private List<RunFinding>? AnalyzeFindings(RunRecord record)
+    {
+        if (record.Summary is null) return null;
+        try
+        {
+            return RunInsights.Analyze(record, history.Load(record.ProfileId, 50));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     private RunRecord Finish(RunRecord record, int exitCode, RunOutcome outcome, string message, bool persist = true, int retain = 0)

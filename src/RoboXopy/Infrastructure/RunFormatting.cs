@@ -1,4 +1,5 @@
 using System.Globalization;
+using RoboXopy.Core.Formatting;
 using RoboXopy.Core.Models;
 
 namespace RoboXopy.Infrastructure;
@@ -6,21 +7,7 @@ namespace RoboXopy.Infrastructure;
 /// <summary>Human-readable text for runs, sizes and durations, shared by the UI, tray and CLI.</summary>
 public static class RunFormatting
 {
-    public static string FormatBytes(long bytes)
-    {
-        string[] units = ["B", "KB", "MB", "GB", "TB"];
-        double value = bytes;
-        var unit = 0;
-        while (Math.Abs(value) >= 1024 && unit < units.Length - 1)
-        {
-            value /= 1024;
-            unit++;
-        }
-
-        return unit == 0
-            ? string.Create(CultureInfo.CurrentCulture, $"{bytes:N0} B")
-            : string.Create(CultureInfo.CurrentCulture, $"{value:0.#} {units[unit]}");
-    }
+    public static string FormatBytes(long bytes) => ByteSize.Format(bytes);
 
     public static string FormatDuration(TimeSpan duration)
     {

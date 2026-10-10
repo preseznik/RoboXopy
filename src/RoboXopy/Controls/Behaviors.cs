@@ -231,3 +231,23 @@ public static class DropDownMenu
         menu.IsOpen = true;
     }
 }
+
+/// <summary>Scrolls the element into view whenever the bound value turns true.</summary>
+public static class RevealBehavior
+{
+    public static readonly DependencyProperty WhenProperty =
+        DependencyProperty.RegisterAttached("When", typeof(bool), typeof(RevealBehavior), new PropertyMetadata(false, OnWhenChanged));
+
+    public static bool GetWhen(DependencyObject d) => (bool)d.GetValue(WhenProperty);
+    public static void SetWhen(DependencyObject d, bool value) => d.SetValue(WhenProperty, value);
+
+    private static void OnWhenChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is not true || d is not FrameworkElement element) return;
+        element.Dispatcher.BeginInvoke(() =>
+        {
+            var padding = new Rect(-24, -48, element.ActualWidth + 48, element.ActualHeight + 96);
+            element.BringIntoView(padding);
+        }, System.Windows.Threading.DispatcherPriority.Loaded);
+    }
+}

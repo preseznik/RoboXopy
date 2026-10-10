@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RoboXopy.Controls;
 using RoboXopy.Core.Models;
 using RoboXopy.Core.Robocopy;
 using RoboXopy.Infrastructure;
@@ -86,6 +87,23 @@ public sealed partial class RunSessionViewModel : ObservableObject
     [ObservableProperty] private string? _logFile;
     [ObservableProperty] private bool _trimmed;
 
+    /// <summary>What happened (or would happen) to the files, once the run has finished with a summary.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasBreakdown))]
+    private IReadOnlyList<BreakdownSegment>? _breakdown;
+
+    /// <summary>Unusual things about the run compared with the profile's history, one per line.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasFindings))]
+    private string? _findingsText;
+
+    [ObservableProperty] private bool _hasWarningFindings;
+    [ObservableProperty] private bool _isResultRedundant;
+
+    public bool HasBreakdown => Breakdown is { Count: > 0 };
+    public bool HasFindings => !string.IsNullOrEmpty(FindingsText);
+    public string FindingsTitle => DryRun ? "This preview looks unusual" : "This run looked unusual";
+
     public string BytesText => RunFormatting.FormatBytes(ByteCount);
     public string FilesLabel => DryRun ? "to copy" : "copied";
     public string ExtrasLabel { get; }
@@ -116,12 +134,48 @@ public sealed partial class RunSessionViewModel : ObservableObject
         Outcome = record.Outcome;
         LogFile = record.LogFile;
         ResultTitle = RunFormatting.OutcomeTitle(record.Outcome, record.DryRun);
-        var summary = RunFormatting.SummaryText(record.Summary, record.DryRun, record.PurgesExtras);
+        Breakdown = BuildBreakdown(record);
+        // The breakdown already lists the counts, so the result bar only needs robocopy's message (if any).
+        var summary = Breakdown is not null && !string.IsNullOrWhiteSpace(record.Message)
+            ? null
+            : RunFormatting.SummaryText(record.Summary, record.DryRun, record.PurgesExtras);
         ResultMessage = string.Join(" — ", new[] { record.Message, summary }.Where(s => !string.IsNullOrWhiteSpace(s)));
         if (record.Outcome is RunOutcome.Error or RunOutcome.Skipped && !string.IsNullOrEmpty(record.Message))
         {
             Entries.Add(new OutputEntry(OutputLineKind.Error, record.Message));
         }
+
+        // A success message only restates the exit code (copied / removed / in sync), which the breakdown already shows.
+        IsResultRedundant = Breakdown is not null && record.Outcome == RunOutcome.Success;
+        if (record.Findings is { Count: > 0 } findings)
+        {
+            HasWarningFindings = record.HasWarnings;
+            FindingsText = string.Join(Environment.NewLine, findings.Select(f => f.Message));
+        }
+    }
+
+    /// <summary>Splits the run's files into unchanged / copied / removed (or kept) / mismatched / failed.</summary>
+    public static IReadOnlyList<BreakdownSegment>? BuildBreakdown(RunRecord record)
+    {
+        if (record.Summary is not { } s) return null;
+        var files = s.Files;
+        var bytes = s.Bytes;
+        var dry = record.DryRun;
+        var segments = new List<BreakdownSegment>
+        {
+            new(BreakdownKind.Unchanged, files.Skipped, bytes.Skipped, "unchanged"),
+            new(BreakdownKind.Copied, files.Copied, bytes.Copied, dry ? "to copy" : "copied"),
+            record.PurgesExtras
+                ? new(BreakdownKind.Removed, files.Extras, bytes.Extras, dry ? "to remove" : "removed")
+                : new(BreakdownKind.Kept, files.Extras, bytes.Extras, "extra (kept)"),
+            new(BreakdownKind.Mismatch, files.Mismatch, bytes.Mismatch, "mismatched"),
+            new(BreakdownKind.Failed, files.Failed, bytes.Failed, "failed"),
+        };
+
+        // Unchanged, copied and removed are always listed so the legend reads the same from run to run;
+        // the rest only when they happened.
+        segments.RemoveAll(x => x.Count == 0 && x.Kind is BreakdownKind.Kept or BreakdownKind.Mismatch or BreakdownKind.Failed);
+        return segments.Any(x => x.Count > 0) ? segments : null;
     }
 
     [RelayCommand]

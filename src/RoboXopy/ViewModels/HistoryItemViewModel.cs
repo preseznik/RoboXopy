@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RoboXopy.Core.Models;
 using RoboXopy.Core.Scheduling;
@@ -7,9 +8,15 @@ using RoboXopy.Infrastructure;
 namespace RoboXopy.ViewModels;
 
 /// <summary>One row in a profile's run history.</summary>
-public sealed partial class HistoryItemViewModel(RunRecord record)
+public sealed partial class HistoryItemViewModel(RunRecord record) : ObservableObject
 {
+    /// <summary>Briefly set when the row is picked from the activity chart.</summary>
+    [ObservableProperty] private bool _isHighlighted;
+
     public RunRecord Record { get; } = record;
+    public bool HasFindings => Record.Findings is { Count: > 0 };
+    public bool HasWarningFinding => Record.HasWarnings;
+    public string? FindingsText => HasFindings ? string.Join(Environment.NewLine, Record.Findings!.Select(f => f.Message)) : null;
     public RunOutcome Outcome => Record.Outcome;
     public bool DryRun => Record.DryRun;
     public string Title => RunFormatting.OutcomeTitle(Record.Outcome, Record.DryRun);

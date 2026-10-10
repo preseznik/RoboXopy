@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="clr-namespace:RoboXopy.Controls"
+             xmlns:vm="clr-namespace:RoboXopy.ViewModels"
              xmlns:m="clr-namespace:RoboXopy.Core.Models;assembly=RoboXopy.Core">
     <UserControl.Resources>
         <!-- Editable page title: looks like a heading until hovered/focused. -->
@@ -289,16 +290,16 @@
 
                             <TextBlock Text="How to sync" Style="{StaticResource SectionHeaderStyle}" />
                             <UniformGrid Columns="2" Margin="0,0,-8,0">
-                                <RadioButton Style="{StaticResource ChoiceCardStyle}" GroupName="CopyMode" Content="Copy"
+                                <RadioButton Style="{StaticResource ChoiceCardStyle}" Content="Copy"
                                              c:Ui.Icon="&#xE8C8;" c:Ui.Description="Copy new and changed files. Nothing is ever deleted."
                                              IsChecked="{Binding Options.Mode, Converter={StaticResource EnumToBool}, ConverterParameter=Copy}" />
-                                <RadioButton Style="{StaticResource ChoiceCardStyle}" GroupName="CopyMode" Content="Mirror"
+                                <RadioButton Style="{StaticResource ChoiceCardStyle}" Content="Mirror"
                                              c:Ui.Icon="&#xE895;" c:Ui.Description="Make the destination an exact copy. Files that aren't in the source are deleted."
                                              IsChecked="{Binding Options.Mode, Converter={StaticResource EnumToBool}, ConverterParameter=Mirror}" />
-                                <RadioButton Style="{StaticResource ChoiceCardStyle}" GroupName="CopyMode" Content="Move files"
+                                <RadioButton Style="{StaticResource ChoiceCardStyle}" Content="Move files"
                                              c:Ui.Icon="&#xE8DE;" c:Ui.Description="Copy, then delete the copied files from the source. Folders stay."
                                              IsChecked="{Binding Options.Mode, Converter={StaticResource EnumToBool}, ConverterParameter=MoveFiles}" />
-                                <RadioButton Style="{StaticResource ChoiceCardStyle}" GroupName="CopyMode" Content="Move files and folders"
+                                <RadioButton Style="{StaticResource ChoiceCardStyle}" Content="Move files and folders"
                                              c:Ui.Icon="&#xE8B7;" c:Ui.Description="Copy, then delete both files and folders from the source."
                                              IsChecked="{Binding Options.Mode, Converter={StaticResource EnumToBool}, ConverterParameter=MoveAll}" />
                             </UniformGrid>
@@ -592,13 +593,13 @@
                                 <c:SettingsCard Header="Repeat" Margin="40,0,0,4">
                                     <Border Style="{StaticResource SegmentedContainerStyle}">
                                         <StackPanel Orientation="Horizontal">
-                                            <RadioButton Style="{StaticResource SegmentedItemStyle}" GroupName="ScheduleKind" Content="Every…"
+                                            <RadioButton Style="{StaticResource SegmentedItemStyle}" Content="Every…"
                                                          IsChecked="{Binding Schedule.Kind, Converter={StaticResource EnumToBool}, ConverterParameter=Interval}" />
-                                            <RadioButton Style="{StaticResource SegmentedItemStyle}" GroupName="ScheduleKind" Content="Daily"
+                                            <RadioButton Style="{StaticResource SegmentedItemStyle}" Content="Daily"
                                                          IsChecked="{Binding Schedule.Kind, Converter={StaticResource EnumToBool}, ConverterParameter=Daily}" />
-                                            <RadioButton Style="{StaticResource SegmentedItemStyle}" GroupName="ScheduleKind" Content="Weekly"
+                                            <RadioButton Style="{StaticResource SegmentedItemStyle}" Content="Weekly"
                                                          IsChecked="{Binding Schedule.Kind, Converter={StaticResource EnumToBool}, ConverterParameter=Weekly}" />
-                                            <RadioButton Style="{StaticResource SegmentedItemStyle}" GroupName="ScheduleKind" Content="At sign-in"
+                                            <RadioButton Style="{StaticResource SegmentedItemStyle}" Content="At sign-in"
                                                          IsChecked="{Binding Schedule.Kind, Converter={StaticResource EnumToBool}, ConverterParameter=AtLogon}" />
                                         </StackPanel>
                                     </Border>
@@ -649,11 +650,11 @@
 
                                 <TextBlock Text="Run with" Style="{StaticResource SectionHeaderStyle}" />
                                 <UniformGrid Columns="2" Margin="0,0,-8,0">
-                                    <RadioButton Style="{StaticResource ChoiceCardStyle}" GroupName="Runner" Content="RoboXopy"
+                                    <RadioButton Style="{StaticResource ChoiceCardStyle}" Content="RoboXopy"
                                                  c:Ui.Icon="&#xE7F4;"
                                                  c:Ui.Description="Runs while RoboXopy is open or waiting in the notification area. Turn on Start with Windows in Settings to keep it running."
                                                  IsChecked="{Binding Schedule.Runner, Converter={StaticResource EnumToBool}, ConverterParameter=App}" />
-                                    <RadioButton Style="{StaticResource ChoiceCardStyle}" GroupName="Runner" Content="Windows Task Scheduler"
+                                    <RadioButton Style="{StaticResource ChoiceCardStyle}" Content="Windows Task Scheduler"
                                                  c:Ui.Icon="&#xE7C4;"
                                                  c:Ui.Description="Runs even when RoboXopy isn't open, as long as you're signed in. Uses this app in the background."
                                                  IsChecked="{Binding Schedule.Runner, Converter={StaticResource EnumToBool}, ConverterParameter=TaskScheduler}" />
@@ -687,6 +688,96 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel>
+                            <!-- Activity chart -->
+                            <StackPanel Visibility="{Binding Chart.IsAvailable, Converter={StaticResource BoolToVisibility}}">
+                                <Grid>
+                                    <TextBlock Text="Activity" Style="{StaticResource SectionHeaderStyle}" />
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0,6">
+                                        <CheckBox Content="Include previews" IsChecked="{Binding Chart.IncludePreviews}" VerticalAlignment="Center" Margin="0,0,16,0"
+                                                  Visibility="{Binding Chart.HasPreviews, Converter={StaticResource BoolToVisibility}}" />
+                                        <Border Style="{StaticResource SegmentedContainerStyle}" AutomationProperties.Name="Measure">
+                                            <StackPanel Orientation="Horizontal">
+                                                <RadioButton Style="{StaticResource SegmentedItemStyle}" Content="Size"
+                                                             AutomationProperties.HelpText="Chart the amount of data"
+                                                             IsChecked="{Binding Chart.Metric, Converter={StaticResource EnumToBool}, ConverterParameter=Bytes}" />
+                                                <RadioButton Style="{StaticResource SegmentedItemStyle}" Content="Files"
+                                                             AutomationProperties.HelpText="Chart the number of files"
+                                                             IsChecked="{Binding Chart.Metric, Converter={StaticResource EnumToBool}, ConverterParameter=Files}" />
+                                            </StackPanel>
+                                        </Border>
+                                        <ComboBox ItemsSource="{x:Static vm:HistoryChartViewModel.Ranges}" SelectedItem="{Binding Chart.SelectedRange}"
+                                                  DisplayMemberPath="Label" MinWidth="148" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                  AutomationProperties.Name="Runs to show" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Border Style="{StaticResource CardStyle}" Padding="20,16,16,14">
+                                    <StackPanel>
+                                        <UniformGrid Rows="1" Margin="0,0,0,14">
+                                            <StackPanel Margin="0,0,16,0">
+                                                <TextBlock Text="Copied" Style="{StaticResource KpiLabelStyle}" />
+                                                <TextBlock Text="{Binding Chart.CopiedValue}" Style="{StaticResource KpiValueStyle}" />
+                                                <TextBlock Text="{Binding Chart.CopiedDetail}" Style="{StaticResource KpiDetailStyle}" />
+                                            </StackPanel>
+                                            <StackPanel Margin="0,0,16,0" Visibility="{Binding Chart.ShowsRemoved, Converter={StaticResource BoolToVisibility}}">
+                                                <TextBlock Text="Removed" Style="{StaticResource KpiLabelStyle}" />
+                                                <TextBlock Text="{Binding Chart.RemovedValue}" Style="{StaticResource KpiValueStyle}" />
+                                                <TextBlock Text="{Binding Chart.RemovedDetail}" Style="{StaticResource KpiDetailStyle}" />
+                                            </StackPanel>
+                                            <StackPanel Margin="0,0,16,0">
+                                                <TextBlock Text="Runs" Style="{StaticResource KpiLabelStyle}" />
+                                                <TextBlock Text="{Binding Chart.RunsValue}" Style="{StaticResource KpiValueStyle}" />
+                                                <TextBlock Text="{Binding Chart.RunsDetail}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock" BasedOn="{StaticResource KpiDetailStyle}">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Chart.HasProblems}" Value="True">
+                                                                    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+                                            <StackPanel Margin="0,0,16,0">
+                                                <TextBlock Text="Duration" Style="{StaticResource KpiLabelStyle}" />
+                                                <TextBlock Text="{Binding Chart.DurationValue}" Style="{StaticResource KpiValueStyle}" />
+                                                <TextBlock Text="{Binding Chart.DurationDetail}" Style="{StaticResource KpiDetailStyle}" />
+                                            </StackPanel>
+                                            <StackPanel>
+                                                <TextBlock Text="Source" Style="{StaticResource KpiLabelStyle}" />
+                                                <TextBlock Text="{Binding Chart.SourceValue}" Style="{StaticResource KpiValueStyle}" />
+                                                <TextBlock Text="{Binding Chart.SourceDetail}" Style="{StaticResource KpiDetailStyle}" />
+                                            </StackPanel>
+                                        </UniformGrid>
+
+                                        <c:RunHistoryChart Height="220" Points="{Binding Chart.Points}" Metric="{Binding Chart.Metric}"
+                                                           Description="{Binding Chart.Description}" ActivateCommand="{Binding ActivateRunCommand}" />
+
+                                        <WrapPanel Margin="0,12,0,0">
+                                            <Border Style="{StaticResource LegendSwatchStyle}" Background="{StaticResource ChartCopiedBrush}" />
+                                            <TextBlock Text="Copied" Style="{StaticResource LegendTextStyle}" />
+                                            <Border Style="{StaticResource LegendSwatchStyle}" Background="{StaticResource ChartRemovedBrush}"
+                                                    Visibility="{Binding Chart.ShowsRemoved, Converter={StaticResource BoolToVisibility}}" />
+                                            <TextBlock Text="Removed" Style="{StaticResource LegendTextStyle}"
+                                                       Visibility="{Binding Chart.ShowsRemoved, Converter={StaticResource BoolToVisibility}}" />
+                                            <Border Style="{StaticResource LegendSwatchStyle}" Height="2" CornerRadius="1" Width="14"
+                                                    Background="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            <TextBlock Text="Source total" Style="{StaticResource LegendTextStyle}" />
+                                            <Ellipse Width="7" Height="7" VerticalAlignment="Center" Fill="{DynamicResource SystemFillColorCriticalBrush}" />
+                                            <TextBlock Text="Failed" Style="{StaticResource LegendTextStyle}" />
+                                            <Path Data="M 4,0 L 8,7 L 0,7 Z" VerticalAlignment="Center" Fill="{DynamicResource SystemFillColorCautionBrush}" />
+                                            <TextBlock Text="Warning or unusual" Style="{StaticResource LegendTextStyle}" />
+                                            <Border Style="{StaticResource LegendSwatchStyle}" BorderThickness="1.5" Background="Transparent"
+                                                    BorderBrush="{StaticResource ChartCopiedBrush}"
+                                                    Visibility="{Binding Chart.IncludePreviews, Converter={StaticResource BoolToVisibility}}" />
+                                            <TextBlock Text="Preview" Style="{StaticResource LegendTextStyle}"
+                                                       Visibility="{Binding Chart.IncludePreviews, Converter={StaticResource BoolToVisibility}}" />
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
                             <Grid>
                                 <TextBlock Text="Recent runs" Style="{StaticResource SectionHeaderStyle}" />
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0,4">
@@ -735,7 +826,17 @@
                             <ItemsControl ItemsSource="{Binding History}" Focusable="False">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,4" Padding="16,10,8,10">
+                                        <Border Margin="0,0,0,4" Padding="16,10,8,10" c:RevealBehavior.When="{Binding IsHighlighted}">
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource CardStyle}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
+                                                            <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                                            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorSecondaryBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
@@ -751,6 +852,28 @@
                                                     <TextBlock Text="{Binding Message}" Style="{StaticResource SecondaryTextStyle}"
                                                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                                                Visibility="{Binding Message, Converter={StaticResource NullToVisibility}}" />
+                                                    <Grid Margin="0,3,0,0" Visibility="{Binding HasFindings, Converter={StaticResource BoolToVisibility}}">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock FontSize="12" VerticalAlignment="Top" Margin="0,2,6,0">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock" BasedOn="{StaticResource IconTextStyle}">
+                                                                    <Setter Property="Text" Value="&#xE946;" />
+                                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding HasWarningFinding}" Value="True">
+                                                                            <Setter Property="Text" Value="&#xE7BA;" />
+                                                                            <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                        <TextBlock Grid.Column="1" Text="{Binding FindingsText}" Style="{StaticResource SecondaryTextStyle}"
+                                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                    </Grid>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="16,0,8,0">
                                                     <TextBlock Text="{Binding WhenText}" ToolTip="{Binding WhenFull}" HorizontalAlignment="Right" />
@@ -835,6 +958,8 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
@@ -879,6 +1004,18 @@
                         <Run Text="{Binding ElapsedText, Mode=OneWay}" />
                     </TextBlock>
                     <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="12,0,0,0">
+                        <Button Content="Open log" Command="{Binding OpenLogCommand}" Margin="0,0,4,0">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource LinkButtonStyle}">
+                                    <Setter Property="Visibility" Value="{Binding LogFile, Converter={StaticResource NullToVisibility}}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
                         <Button Content="Stop" Style="{StaticResource DangerButtonStyle}" Command="{Binding CancelCommand}" Padding="12,3,12,4"
                                 Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibility}}" />
                         <Button Style="{StaticResource IconButtonStyle}" Content="&#xE711;" FontSize="12" Margin="4,0,0,0"
@@ -910,8 +1047,46 @@
                                Visibility="{Binding CurrentItem, Converter={StaticResource NullToVisibility}}" />
                 </Grid>
 
+                <!-- Breakdown: what happened (or would happen) to the files -->
+                <StackPanel Grid.Row="2" Margin="32,4,24,10" Visibility="{Binding HasBreakdown, Converter={StaticResource BoolToVisibility}}">
+                    <c:BreakdownBar Segments="{Binding Breakdown}" />
+                    <ItemsControl ItemsSource="{Binding Breakdown}" Margin="0,8,0,0" Focusable="False" IsTabStop="False">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                    <Border Style="{StaticResource BreakdownSwatchStyle}" />
+                                    <TextBlock Style="{StaticResource LegendTextStyle}">
+                                        <Run Text="{Binding CountText, Mode=OneWay}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                        <Run Text="{Binding Label, Mode=OneWay}" /><Run Text="{Binding BytesSuffix, Mode=OneWay}" />
+                                    </TextBlock>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- Findings: unusual compared with this profile's history -->
+                <c:InfoBar Grid.Row="4" Margin="32,0,24,6" Title="{Binding FindingsTitle}" Message="{Binding FindingsText}"
+                           Visibility="{Binding HasFindings, Converter={StaticResource BoolToVisibility}}">
+                    <c:InfoBar.Style>
+                        <Style TargetType="c:InfoBar" BasedOn="{StaticResource {x:Type c:InfoBar}}">
+                            <Setter Property="Severity" Value="Informational" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasWarningFindings}" Value="True">
+                                    <Setter Property="Severity" Value="Warning" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </c:InfoBar.Style>
+                </c:InfoBar>
+
                 <!-- Result -->
-                <c:InfoBar Grid.Row="2" Margin="32,0,24,6" Title="{Binding ResultTitle}" Message="{Binding ResultMessage}">
+                <c:InfoBar Grid.Row="3" Margin="32,0,24,6" Title="{Binding ResultTitle}" Message="{Binding ResultMessage}">
                     <c:InfoBar.Style>
                         <Style TargetType="c:InfoBar" BasedOn="{StaticResource {x:Type c:InfoBar}}">
                             <Setter Property="Severity" Value="Informational" />
@@ -934,15 +1109,16 @@
                                 <DataTrigger Binding="{Binding Outcome}" Value="Error">
                                     <Setter Property="Severity" Value="Error" />
                                 </DataTrigger>
+                                <DataTrigger Binding="{Binding IsResultRedundant}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </c:InfoBar.Style>
-                    <Button Content="Open log" Command="{Binding OpenLogCommand}"
-                            Visibility="{Binding LogFile, Converter={StaticResource NullToVisibility}}" />
                 </c:InfoBar>
 
                 <!-- Output lines -->
-                <ListBox Grid.Row="3" x:Name="OutputList" ItemsSource="{Binding Entries}" Style="{StaticResource BareListBoxStyle}"
+                <ListBox Grid.Row="5" x:Name="OutputList" ItemsSource="{Binding Entries}" Style="{StaticResource BareListBoxStyle}"
                          ItemContainerStyle="{StaticResource OutputListBoxItemStyle}" Padding="0,0,0,8"
                          c:AutoScroll.IsEnabled="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                          ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto"

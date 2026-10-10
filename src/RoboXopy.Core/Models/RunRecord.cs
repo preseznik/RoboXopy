@@ -40,6 +40,12 @@ public sealed class RunRecord
     /// <summary>True when the run deletes extra destination items (/MIR or /PURGE), so "extras" means removed.</summary>
     public bool PurgesExtras { get; set; }
 
+    /// <summary>Unusual aspects of this run compared with earlier runs; null when there is nothing to report.</summary>
+    public List<RunFinding>? Findings { get; set; }
+
     [JsonIgnore]
     public TimeSpan Duration => EndedAt - StartedAt;
+
+    [JsonIgnore]
+    public bool HasWarnings => Findings?.Any(f => f.Severity == FindingSeverity.Warning) == true;
 }

@@ -27,12 +27,16 @@ public enum ProfileStatus
 /// <summary>Editor and runner for a single <see cref="SyncProfile"/>.</summary>
 public sealed partial class ProfileViewModel : ObservableObject
 {
+    private const int HistoryListSize = 200;
+
     private readonly MainViewModel _main;
     private readonly AppHost _host;
     private readonly DispatcherTimer _saveTimer;
     private readonly DispatcherTimer _validateTimer;
     private readonly DispatcherTimer _copiedTimer;
+    private readonly DispatcherTimer _highlightTimer;
     private readonly SemaphoreSlim _taskLock = new(1, 1);
+    private HistoryItemViewModel? _highlighted;
     private int _validationVersion;
     private bool _taskSyncPending;
     private bool _applyingRegistration;
@@ -59,6 +63,13 @@ public sealed partial class ProfileViewModel : ObservableObject
             _copiedTimer.Stop();
             CommandCopied = false;
         };
+        _highlightTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
+        _highlightTimer.Tick += (_, _) =>
+        {
+            _highlightTimer.Stop();
+            if (_highlighted is not null) _highlighted.IsHighlighted = false;
+            _highlighted = null;
+        };
 
         MaxFileSize = new SizeLimitViewModel(() => Options.MaxFileSizeBytes, v => Options.MaxFileSizeBytes = v);
         MinFileSize = new SizeLimitViewModel(() => Options.MinFileSizeBytes, v => Options.MinFileSizeBytes = v);
@@ -78,6 +89,7 @@ public sealed partial class ProfileViewModel : ObservableObject
     public SizeLimitViewModel MaxFileSize { get; }
     public SizeLimitViewModel MinFileSize { get; }
     public ObservableCollection<HistoryItemViewModel> History { get; } = [];
+    public HistoryChartViewModel Chart { get; } = new();
 
     // ── Display ─────────────────────────────────────────────────────────
     public string DisplayName => string.IsNullOrWhiteSpace(Model.Name) ? "Untitled profile" : Model.Name.Trim();
@@ -469,9 +481,10 @@ public sealed partial class ProfileViewModel : ObservableObject
         var id = Model.Id;
         try
         {
-            var records = await Task.Run(() => history.Load(id, 200));
+            var records = await Task.Run(() => history.Load(id, HistoryChartViewModel.MaxRecords));
             History.Clear();
-            foreach (var r in records) History.Add(new HistoryItemViewModel(r));
+            foreach (var r in records.Take(HistoryListSize)) History.Add(new HistoryItemViewModel(r));
+            Chart.SetRecords(records);
             if (records.Count > 0 && !IsRunning) LastRun = records[0];
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -504,7 +517,20 @@ public sealed partial class ProfileViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task Run()
     {
-        if (IsDestructive && !(LastRun is { DryRun: false }))
+        if (LastRun is { DryRun: true, HasWarnings: true } preview
+            && preview.CommandLine == RobocopyCommandBuilder.BuildCommandLine(Snapshot(), dryRun: true))
+        {
+            var findings = preview.Findings!
+                .Where(f => f.Severity == FindingSeverity.Warning)
+                .Select(f => "• " + f.Message);
+            var ok = await _main.ConfirmAsync(
+                "The last preview looked unusual",
+                $"{string.Join("\n", findings)}\n\nCheck that the source and destination are the ones you expect before running “{DisplayName}”.",
+                "Run anyway",
+                destructive: true);
+            if (!ok) return;
+        }
+        else if (IsDestructive && !(LastRun is { DryRun: false }))
         {
             var verb = Options.Mode switch
             {
@@ -577,7 +603,12 @@ public sealed partial class ProfileViewModel : ObservableObject
         if (persisted)
         {
             LastRun = record;
-            if (_historyLoaded) History.Insert(0, new HistoryItemViewModel(record));
+            if (_historyLoaded)
+            {
+                History.Insert(0, new HistoryItemViewModel(record));
+                if (History.Count > HistoryListSize) History.RemoveAt(History.Count - 1);
+                Chart.Add(record);
+            }
         }
         else
         {
@@ -671,7 +702,24 @@ public sealed partial class ProfileViewModel : ObservableObject
         }
 
         History.Clear();
+        Chart.SetRecords([]);
         LastRun = null;
+    }
+
+    /// <summary>Scrolls to a run picked on the activity chart and highlights it briefly.</summary>
+    [RelayCommand]
+    private void ActivateRun(RunRecord? record)
+    {
+        if (record is null) return;
+        var item = History.FirstOrDefault(h => ReferenceEquals(h.Record, record))
+                   ?? History.FirstOrDefault(h => h.Record.StartedAt == record.StartedAt);
+        if (item is null) return;
+
+        _highlightTimer.Stop();
+        if (_highlighted is not null) _highlighted.IsHighlighted = false;
+        _highlighted = item;
+        item.IsHighlighted = true;
+        _highlightTimer.Start();
     }
 
     [RelayCommand]
