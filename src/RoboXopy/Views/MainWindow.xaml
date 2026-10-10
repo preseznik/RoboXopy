@@ -74,7 +74,9 @@
                     <Button Style="{StaticResource IconButtonStyle}" Content="&#xE8B5;" ToolTip="Import…"
                             AutomationProperties.Name="Import" c:DropDownMenu.IsEnabled="True">
                         <Button.ContextMenu>
-                            <ContextMenu>
+                            <!-- Opened menus inherit fonts from the button; reset the icon font IconButtonStyle applies. -->
+                            <ContextMenu FontFamily="{DynamicResource {x:Static SystemFonts.MessageFontFamilyKey}}"
+                                         FontSize="{DynamicResource ControlContentThemeFontSize}">
                                 <MenuItem Header="RoboXopy profiles (.json)…" Command="{Binding ImportProfilesCommand}">
                                     <MenuItem.Icon>
                                         <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE8B5;" />

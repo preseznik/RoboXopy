@@ -4,6 +4,12 @@ All notable changes to RoboXopy are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-10-10
+
+### Fixed
+
+- The **Import** menu next to **+** in the profiles panel showed boxes instead of text. It now uses the normal font, the same as the other menus.
+
 ## [1.1.2] - 2026-10-10
 
 ### Added
