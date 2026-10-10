@@ -4,6 +4,15 @@ All notable changes to RoboXopy are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-10
+
+### Added
+
+- Update check. RoboXopy looks for a newer release on GitHub shortly after it starts and then once a day. It shows **Update available** in the title bar and the notification-area menu, and a notification when the window isn't open. Settings › Updates shows the status and has **Check for updates** and an option to turn automatic checks off.
+- **Download and install** downloads the new setup, verifies its SHA-256, and runs it silently for the same install scope. Syncs in progress are stopped only after you confirm. RoboXopy reopens when Setup finishes and shows a notification that it was updated. Copies that weren't installed with Setup open the download page instead.
+- Command line: `--check-update` reports whether a newer version is available (exit code 2 if so).
+- Installer: `/RELAUNCH=normal|minimized` starts RoboXopy again after a silent install (used by the in-app updater).
+
 ## [1.1.0] - 2026-10-10
 
 ### Added

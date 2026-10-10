@@ -44,6 +44,15 @@
                     <TextBlock Text="Schedules paused" FontSize="11" />
                 </StackPanel>
             </Border>
+            <Button Style="{StaticResource TitleBarPillButtonStyle}" Margin="12,0,0,0" WindowChrome.IsHitTestVisibleInChrome="True"
+                    Command="{Binding OpenUpdatesCommand}" AutomationProperties.Name="Update available"
+                    ToolTip="{Binding Updates.NewVersion, StringFormat='RoboXopy {0} is available. Click to see what''s new and install it.'}"
+                    Visibility="{Binding Updates.HasUpdate, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE896;" FontSize="11" Margin="0,1,6,0" />
+                    <TextBlock Text="Update available" />
+                </StackPanel>
+            </Button>
         </StackPanel>
 
         <!-- Navigation pane -->

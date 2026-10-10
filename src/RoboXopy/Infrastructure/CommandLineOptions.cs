@@ -14,6 +14,9 @@ public sealed record CommandLineOptions
     public bool ShowHelp { get; init; }
     public bool ShowVersion { get; init; }
 
+    /// <summary>Print whether a newer release is available on GitHub.</summary>
+    public bool CheckUpdate { get; init; }
+
     /// <summary>Ask running instances of this executable to quit (used by the uninstaller).</summary>
     public bool ExitRunning { get; init; }
 
@@ -68,6 +71,9 @@ public sealed record CommandLineOptions
                     break;
                 case "--version" or "-v":
                     options = options with { ShowVersion = true };
+                    break;
+                case "--check-update" or "--check-updates":
+                    options = options with { CheckUpdate = true };
                     break;
                 case "--exit":
                     options = options with { ExitRunning = true };

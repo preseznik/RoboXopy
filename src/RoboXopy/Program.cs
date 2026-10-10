@@ -29,6 +29,7 @@ public static class Program
 
         if (options.ShowHelp) return HeadlessRunner.PrintHelp();
         if (options.ShowVersion) return HeadlessRunner.PrintVersion();
+        if (options.CheckUpdate) return HeadlessRunner.CheckUpdate();
         if (options.ExitRunning) return HeadlessRunner.ExitRunning();
         if (options.UninstallCleanup) return HeadlessRunner.UninstallCleanup();
         if (options.ListProfiles) return HeadlessRunner.ListProfiles();

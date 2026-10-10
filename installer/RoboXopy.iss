@@ -110,6 +110,8 @@ Name: "{autodesktop}\RoboXopy"; Filename: "{app}\RoboXopy.exe"; Comment: "Roboco
 
 [Run]
 Filename: "{app}\RoboXopy.exe"; Description: "{cm:LaunchProgram,RoboXopy}"; Flags: nowait postinstall skipifsilent
+; After an update started from inside RoboXopy (which passes /RELAUNCH=normal|minimized), start it again.
+Filename: "{app}\RoboXopy.exe"; Parameters: "{code:RelaunchParams}"; Flags: nowait runasoriginaluser; Check: ShouldRelaunch
 
 [UninstallRun]
 ; Close RoboXopy (the window app and any scheduled runs in progress) so its files can be removed.
@@ -122,6 +124,29 @@ Filename: "{app}\RoboXopy.exe"; Parameters: "--uninstall-cleanup"; Flags: runhid
 Type: filesandordirs; Name: "{%TEMP}\.net\RoboXopy"
 
 [Code]
+function ShouldRelaunch: Boolean;
+begin
+  Result := ExpandConstant('{param:RELAUNCH|}') <> '';
+end;
+
+{ /RELAUNCH=minimized reopens RoboXopy in the notification area; /DATADIR passes on a non-standard data folder. }
+function RelaunchParams(Param: String): String;
+var
+  DataDir: String;
+begin
+  Result := '';
+  if CompareText(ExpandConstant('{param:RELAUNCH|}'), 'minimized') = 0 then
+    Result := '--minimized';
+  DataDir := ExpandConstant('{param:DATADIR|}');
+  if DataDir <> '' then
+  begin
+    { A trailing backslash would escape the closing quote (e.g. a drive root such as D:\). }
+    if DataDir[Length(DataDir)] = '\' then
+      DataDir := DataDir + '\';
+    Result := Trim(Result + ' --data-dir "' + DataDir + '"');
+  end;
+end;
+
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   DataDir: String;

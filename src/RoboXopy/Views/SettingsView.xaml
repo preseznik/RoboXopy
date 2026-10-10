@@ -110,6 +110,49 @@
                 </Button>
             </c:SettingsCard>
 
+            <!-- Updates -->
+            <StackPanel x:Name="UpdatesSection" DataContext="{Binding Updates}">
+                <TextBlock Text="Updates" Style="{StaticResource SectionHeaderStyle}" />
+                <c:SettingsCard Icon="&#xE895;" Header="{Binding Title}" Description="{Binding Description}"
+                                AutomationProperties.Name="Update status">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <ProgressBar Width="180" Minimum="0" Maximum="100" Value="{Binding Progress, Mode=OneWay}"
+                                     IsIndeterminate="{Binding IsProgressIndeterminate}" VerticalAlignment="Center"
+                                     Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVisibility}}"
+                                     AutomationProperties.Name="Update progress" />
+                        <Button Content="Cancel" Margin="12,0,0,0" Command="{Binding CancelDownloadCommand}"
+                                Visibility="{Binding ShowCancelButton, Converter={StaticResource BoolToVisibility}}" />
+                        <Button Style="{StaticResource LinkButtonStyle}" Command="{Binding OpenReleasePageCommand}" Margin="0,0,8,0"
+                                AutomationProperties.Name="What's new"
+                                Visibility="{Binding ShowReleaseNotes, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="What's new" />
+                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE8A7;" FontSize="12" Margin="8,1,0,0" />
+                            </StackPanel>
+                        </Button>
+                        <Button Content="Check for updates" Command="{Binding CheckNowCommand}"
+                                Visibility="{Binding ShowCheckButton, Converter={StaticResource BoolToVisibility}}" />
+                        <Button Style="{StaticResource AccentButtonStyle}" Content="{Binding InstallButtonText}"
+                                Command="{Binding InstallCommand}"
+                                Visibility="{Binding ShowInstallButton, Converter={StaticResource BoolToVisibility}}" />
+                        <Button Style="{StaticResource AccentButtonStyle}" Command="{Binding OpenReleasePageCommand}"
+                                AutomationProperties.Name="Open download page"
+                                Visibility="{Binding ShowDownloadPageButton, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Open download page" />
+                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE8A7;" FontSize="12" Margin="8,1,0,0" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </c:SettingsCard>
+                <c:SettingsCard Icon="&#xE823;" Header="Check for updates automatically"
+                                Description="Checks GitHub once a day. Nothing is downloaded until you choose to install.">
+                    <CheckBox Style="{StaticResource ToggleSwitchStyle}"
+                              IsChecked="{Binding DataContext.Model.CheckForUpdates, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              AutomationProperties.Name="Check for updates automatically" />
+                </c:SettingsCard>
+            </StackPanel>
+
             <!-- About -->
             <TextBlock Text="About" Style="{StaticResource SectionHeaderStyle}" />
             <Border Style="{StaticResource CardStyle}">

@@ -106,6 +106,17 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add(pause);
         menu.Items.Add(new Separator());
 
+        if (_main.Updates.HasUpdate)
+        {
+            var update = new MenuItem { Header = _main.Updates.TrayMenuText };
+            update.Click += (_, _) =>
+            {
+                _showWindow();
+                _main.OpenUpdatesCommand.Execute(null);
+            };
+            menu.Items.Add(update);
+        }
+
         var exit = new MenuItem { Header = "Exit" };
         exit.Click += (_, _) => _exit();
         menu.Items.Add(exit);

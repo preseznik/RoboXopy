@@ -13,11 +13,19 @@ public sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly AppHost _host;
 
-    public SettingsViewModel(AppHost host)
+    public SettingsViewModel(AppHost host, UpdateViewModel updates)
     {
         _host = host;
+        Updates = updates;
         Model.PropertyChanged += OnModelPropertyChanged;
     }
+
+    public UpdateViewModel Updates { get; }
+
+    /// <summary>Asks the view to bring the Updates section into view.</summary>
+    public event EventHandler? ShowUpdatesRequested;
+
+    public void RequestShowUpdates() => ShowUpdatesRequested?.Invoke(this, EventArgs.Empty);
 
     public AppSettings Model => _host.Settings;
     public string DataFolder => _host.Paths.Root;

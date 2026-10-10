@@ -16,6 +16,7 @@ Built with WPF on .NET 10 and the Windows 11 (Fluent) theme. Light, dark and sys
   - **Windows Task Scheduler**: registers a task under `\RoboXopy\` for your account, so it runs even when RoboXopy is closed.
 - **History** for each profile, with the outcome, trigger, totals, duration and a link to the log.
 - **Notifications** when a sync finishes, or only when it has problems.
+- **Updates**: RoboXopy checks GitHub for a new release once a day (Settings › Updates; this can be turned off). When one is available it can download, verify and install it, then reopen.
 
 ## Requirements
 
@@ -28,6 +29,8 @@ Built with WPF on .NET 10 and the Windows 11 (Fluent) theme. Light, dark and sys
 Run `RoboXopy-<version>-win-x64-setup.exe`. It asks whether to install for you only (in `%LOCALAPPDATA%\Programs\RoboXopy`, no administrator rights needed) or for all users (in `Program Files`). It adds a Start menu shortcut and, if you choose, a desktop shortcut.
 
 To upgrade, run the setup for the newer version. If RoboXopy is open, Setup closes it and starts it again afterwards. Your profiles and settings are kept.
+
+RoboXopy can also update itself. It checks the [GitHub releases](https://github.com/preseznik/RoboXopy/releases) shortly after it starts and then once a day. When a newer version is out, an **Update available** button appears in the title bar and in the notification-area menu. **Download and install** downloads the setup, checks its SHA-256, asks before stopping any sync in progress, and runs Setup silently for the same scope (current user or all users; the latter shows a Windows prompt). RoboXopy reopens when Setup finishes. Nothing is downloaded until you choose to install. Copies that weren't installed with Setup (the zip) link to the download page instead.
 
 Uninstalling (Settings › Apps, or the Start menu) closes RoboXopy and removes its Task Scheduler tasks and its "Start with Windows" entry. It then asks whether to delete your profiles, settings, history and logs as well; the default answer is No.
 
@@ -108,6 +111,8 @@ RoboXopy --list                   List all profiles
 RoboXopy --exit                   Close every running RoboXopy started from this exe
                                   (the window app and runs in progress, which are cancelled)
 RoboXopy --version                Show the version
+RoboXopy --check-update           Check GitHub for a newer release
+                                  (exit code 0 = up to date, 2 = update available, 16 = check failed)
 RoboXopy --help                   Show help
           --data-dir <folder>     Use another data folder (any command)
 ```

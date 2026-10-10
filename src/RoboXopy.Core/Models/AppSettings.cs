@@ -13,6 +13,10 @@ public sealed partial class AppSettings : ObservableObject
     [ObservableProperty] private bool _schedulerPaused;
     [ObservableProperty] private int _logRetentionCount = 30;
     [ObservableProperty] private string _robocopyPath = "";
+    [ObservableProperty] private bool _checkForUpdates = true;
+    [ObservableProperty] private DateTimeOffset? _lastUpdateCheck;
+    /// <summary>The version that last ran with this data folder; used to announce a completed update.</summary>
+    [ObservableProperty] private string _lastRunVersion = "";
 
     [ObservableProperty] private double _windowWidth = 1240;
     [ObservableProperty] private double _windowHeight = 820;

@@ -4,6 +4,7 @@ using RoboXopy.Core.Models;
 using RoboXopy.Core.Robocopy;
 using RoboXopy.Core.Scheduling;
 using RoboXopy.Core.Storage;
+using RoboXopy.Core.Updates;
 
 namespace RoboXopy.Infrastructure;
 
@@ -45,6 +46,8 @@ internal static class HeadlessRunner
               RoboXopy --exit                   Close running RoboXopy windows and runs, cancelling
                                                 any sync in progress
               RoboXopy --version                Show the version
+              RoboXopy --check-update           Check GitHub for a newer release
+                                                (exit code 0 = up to date, 2 = update available)
               RoboXopy --help                   Show this help
 
             Add --data-dir <folder> to any command to use another data folder
@@ -66,6 +69,33 @@ internal static class HeadlessRunner
         AttachConsole();
         Console.WriteLine($"RoboXopy {AppVersion.Informational}");
         return 0;
+    }
+
+    public const int ExitCodeUpdateAvailable = 2;
+
+    public static int CheckUpdate()
+    {
+        AttachConsole();
+        try
+        {
+            using var client = new UpdateClient(AppVersion.SemVer);
+            var latest = client.GetLatestReleaseAsync().GetAwaiter().GetResult();
+            var current = SemanticVersion.Parse(AppVersion.SemVer);
+            if (latest.Version > current)
+            {
+                Console.WriteLine($"RoboXopy {latest.Version} is available (you have {current}).");
+                Console.WriteLine(latest.PageUrl);
+                return ExitCodeUpdateAvailable;
+            }
+
+            Console.WriteLine($"RoboXopy {current} is up to date (latest release: {latest.Version}).");
+            return 0;
+        }
+        catch (Exception ex) when (ex is UpdateException or FormatException)
+        {
+            Console.Error.WriteLine($"Couldn't check for updates: {ex.Message}");
+            return ExitCodeError;
+        }
     }
 
     public static int ExitRunning()

@@ -26,19 +26,19 @@ internal sealed class ExitRequest : IDisposable
         _event.Dispose();
     }
 
+    /// <summary>How many other processes are running this executable (other windows or command-line runs).</summary>
+    public static int CountOthers()
+    {
+        var others = FindOthers();
+        foreach (var process in others) process.Dispose();
+        return others.Count;
+    }
+
     /// <summary>Asks every other process running this executable to exit and waits for them to do so.</summary>
     /// <returns>How many processes were running, and how many were still running when the timeout expired.</returns>
     public static (int Found, int Remaining) SignalOthers(TimeSpan timeout)
     {
-        var exePath = Environment.ProcessPath;
-        if (exePath is null) return (0, 0);
-
-        var others = new List<Process>();
-        foreach (var process in Process.GetProcessesByName(Path.GetFileNameWithoutExtension(exePath)))
-        {
-            if (process.Id != Environment.ProcessId && IsSameExecutable(process, exePath)) others.Add(process);
-            else process.Dispose();
-        }
+        var others = FindOthers();
 
         foreach (var process in others)
         {
@@ -66,6 +66,21 @@ internal sealed class ExitRequest : IDisposable
         }
 
         return (others.Count, remaining);
+    }
+
+    private static List<Process> FindOthers()
+    {
+        var others = new List<Process>();
+        var exePath = Environment.ProcessPath;
+        if (exePath is null) return others;
+
+        foreach (var process in Process.GetProcessesByName(Path.GetFileNameWithoutExtension(exePath)))
+        {
+            if (process.Id != Environment.ProcessId && IsSameExecutable(process, exePath)) others.Add(process);
+            else process.Dispose();
+        }
+
+        return others;
     }
 
     private static bool IsSameExecutable(Process process, string exePath)

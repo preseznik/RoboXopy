@@ -3,6 +3,7 @@ using System.Windows.Threading;
 using RoboXopy.Core.Models;
 using RoboXopy.Core.Scheduling;
 using RoboXopy.Core.Storage;
+using RoboXopy.Core.Updates;
 using RoboXopy.Infrastructure;
 using RoboXopy.Services;
 using RoboXopy.ViewModels;
@@ -62,6 +63,9 @@ public partial class App : Application
 
         Tray = new TrayIconService(Main, ShowMainWindow, () => _ = ExitApplicationAsync());
         Main.RunFinished += (_, args) => OnRunFinished(args, external: false);
+        Main.Updates.UpdateFound += OnUpdateFound;
+        Main.Updates.Start();
+        Dispatcher.BeginInvoke(NotifyIfUpdated, DispatcherPriority.ApplicationIdle);
 
         _scheduler = new AppScheduler(Main);
         _scheduler.Start();
@@ -104,6 +108,37 @@ public partial class App : Application
 
         var (title, message) = RunFormatting.Notification(record);
         Tray?.ShowNotification(title, message, AppIcons.ToolTipIconFor(record.Outcome), () => ShowProfile(args.Profile));
+    }
+
+    private void OnUpdateFound(object? sender, ReleaseInfo release)
+    {
+        // The title bar already shows it when the window is in front.
+        if (_window is { IsVisible: true, IsActive: true }) return;
+        Tray?.ShowNotification($"RoboXopy {release.Version} is available",
+            "Click to see what's new and install the update.", System.Windows.Forms.ToolTipIcon.Info, ShowUpdates);
+    }
+
+    private void ShowUpdates()
+    {
+        ShowMainWindow();
+        Main.OpenUpdatesCommand.Execute(null);
+    }
+
+    /// <summary>Says so once after an update was installed, and remembers the version that ran.</summary>
+    private void NotifyIfUpdated()
+    {
+        var current = AppVersion.SemVer;
+        var last = Host.Settings.LastRunVersion;
+        if (last == current) return;
+        Host.Settings.LastRunVersion = current;
+        if (AppVersion.IsDevBuild || !SemanticVersion.TryParse(last, out var previous) ||
+            !SemanticVersion.TryParse(current, out var now) || now <= previous)
+        {
+            return;
+        }
+
+        Tray?.ShowNotification($"RoboXopy was updated to {now}", "Click to see what's new.", System.Windows.Forms.ToolTipIcon.Info,
+            () => Shell.Open($"https://github.com/{UpdateClient.DefaultRepository}/releases/tag/v{now}"));
     }
 
     public void ShowProfile(ProfileViewModel profile)
@@ -208,6 +243,7 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _exitRequest?.Dispose();
+        Main?.Updates.Dispose();
         Tray?.Dispose();
         base.OnExit(e);
     }

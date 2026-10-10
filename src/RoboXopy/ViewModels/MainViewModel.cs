@@ -26,7 +26,8 @@ public sealed partial class MainViewModel : ObservableObject
     public MainViewModel(AppHost host)
     {
         Host = host;
-        Settings = new SettingsViewModel(host);
+        Updates = new UpdateViewModel(host, this);
+        Settings = new SettingsViewModel(host, Updates);
         ProfilesView = CollectionViewSource.GetDefaultView(Profiles);
         ProfilesView.Filter = FilterProfile;
 
@@ -59,6 +60,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public AppHost Host { get; }
     public SettingsViewModel Settings { get; }
+    public UpdateViewModel Updates { get; }
     public DialogViewModel Dialog { get; } = new();
     public ObservableCollection<ProfileViewModel> Profiles { get; } = [];
     public ICollectionView ProfilesView { get; }
@@ -168,6 +170,14 @@ public sealed partial class MainViewModel : ObservableObject
     {
         IsSettingsOpen = false;
         SelectedProfile = _profileBeforeSettings is { } p && Profiles.Contains(p) ? p : Profiles.FirstOrDefault();
+    }
+
+    /// <summary>Opens Settings scrolled to the Updates section.</summary>
+    [RelayCommand]
+    private void OpenUpdates()
+    {
+        OpenSettings();
+        Settings.RequestShowUpdates();
     }
 
     // ── Profile management ──────────────────────────────────────────────
