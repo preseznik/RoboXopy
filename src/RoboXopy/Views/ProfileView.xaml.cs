@@ -61,10 +61,18 @@ public partial class ProfileView : UserControl
         }
     }
 
+    // The thumb moves with the panel, so VerticalChange is relative to its current position; the tab area gives up space down to its MinHeight.
+    private void OnSplitterDragDelta(object sender, DragDeltaEventArgs e)
+    {
+        var max = OutputRow.ActualHeight + Math.Max(0, ContentRow.ActualHeight - ContentRow.MinHeight);
+        var height = Math.Clamp(OutputRow.ActualHeight - e.VerticalChange, MinOutputHeight, Math.Max(MinOutputHeight, max));
+        OutputRow.Height = new GridLength(Math.Round(height));
+    }
+
     private void OnSplitterDragCompleted(object sender, DragCompletedEventArgs e)
     {
-        if (_vm is null || OutputRow.ActualHeight < MinOutputHeight) return;
-        _vm.AppSettings.OutputPanelHeight = Math.Round(OutputRow.ActualHeight);
+        if (_vm is null || OutputRow.Height.Value < MinOutputHeight) return;
+        _vm.AppSettings.OutputPanelHeight = Math.Round(OutputRow.Height.Value);
     }
 
     private void OnTimeBoxLostFocus(object sender, KeyboardFocusChangedEventArgs e) => _vm?.CommitTimeOfDay();

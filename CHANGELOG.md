@@ -4,6 +4,12 @@ All notable changes to RoboXopy are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-10-10
+
+### Fixed
+
+- Dragging the top edge of the output panel stretched the command line row instead of resizing the panel. The command line now keeps its height and moves with the panel, and the profile settings above give up or take back the space.
+
 ## [1.2.0] - 2026-10-10
 
 ### Added

@@ -74,7 +74,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" MinHeight="160" />
+            <RowDefinition x:Name="ContentRow" Height="*" MinHeight="160" />
             <RowDefinition Height="Auto" />
             <RowDefinition x:Name="SplitterRow" Height="Auto" />
             <RowDefinition x:Name="OutputRow" Height="0" />
@@ -945,10 +945,17 @@
         </Border>
 
         <!-- ═══ Output panel ═════════════════════════════════════════════ -->
-        <GridSplitter x:Name="OutputSplitter" Grid.Row="4" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                      ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" Background="Transparent" Focusable="False"
-                      Cursor="SizeNS" DragCompleted="OnSplitterDragCompleted"
-                      Visibility="{Binding HasSession, Converter={StaticResource BoolToVisibility}}" />
+        <!-- Resizes the output row only; the tab area above absorbs the change and the command line keeps its height. -->
+        <Thumb x:Name="OutputSplitter" Grid.Row="4" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+               Focusable="False" Cursor="SizeNS"
+               DragDelta="OnSplitterDragDelta" DragCompleted="OnSplitterDragCompleted"
+               Visibility="{Binding HasSession, Converter={StaticResource BoolToVisibility}}">
+            <Thumb.Template>
+                <ControlTemplate TargetType="Thumb">
+                    <Border Background="Transparent" />
+                </ControlTemplate>
+            </Thumb.Template>
+        </Thumb>
 
         <Border x:Name="OutputPanel" Grid.Row="5" DataContext="{Binding Session}"
                 Background="{DynamicResource LayerOnMicaBaseAltFillColorDefaultBrush}"

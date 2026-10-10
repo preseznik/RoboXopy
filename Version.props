@@ -5,7 +5,7 @@
     and every published build increments BuildNumber (never reset, so it stays unique).
   -->
   <PropertyGroup>
-    <VersionPrefix>1.2.0</VersionPrefix>
-    <BuildNumber>6</BuildNumber>
+    <VersionPrefix>1.2.1</VersionPrefix>
+    <BuildNumber>7</BuildNumber>
   </PropertyGroup>
 </Project>
