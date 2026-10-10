@@ -692,7 +692,7 @@ public sealed partial class ProfileViewModel : ObservableObject
     [RelayCommand]
     private void SetMode(CopyMode mode) => Options.Mode = mode;
 
-    private static string? PickFolder(string title, string current)
+    internal static string? PickFolder(string title, string current)
     {
         var dialog = new OpenFolderDialog { Title = title };
         try

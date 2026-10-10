@@ -17,6 +17,7 @@ Built with WPF on .NET 10 and the Windows 11 (Fluent) theme. Light, dark and sys
 - **History** for each profile, with the outcome, trigger, totals, duration and a link to the log.
 - **Notifications** when a sync finishes, or only when it has problems.
 - **Updates**: RoboXopy checks GitHub for a new release once a day (Settings › Updates; this can be turned off). When one is available it can download, verify and install it, then reopen.
+- **Import and export**: profiles can be exported to and imported from JSON. **Import › Robocopy batch file** turns an existing `.bat` or `.cmd` that runs robocopy into a profile. A wizard shows the command it found and lets you pick one when the file has several. It lists how each switch was imported (and which weren't, such as `/LOG` or `/JOB`), and lets you name the profile and check the folders before it's created. Relative paths, `%~dp0`, `cd`/`pushd` and `^` line continuations are resolved.
 
 ## Requirements
 

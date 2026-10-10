@@ -4,6 +4,16 @@ All notable changes to RoboXopy are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-10
+
+### Added
+
+- Import robocopy batch files. **Import › Robocopy batch file (.bat, .cmd)…** (or choosing a `.bat`/`.cmd` in the profile import dialog) opens a three-step wizard:
+  - **Command**: shows the robocopy command found in the file. If the file runs robocopy more than once, you choose which command to import.
+  - **Settings**: lists each part of the command and the profile setting it became. Switches with no profile setting are passed to robocopy as they are. Switches RoboXopy handles itself (`/LOG`, `/TEE`, `/JOB`, `/MON`, …) are left out, with an explanation.
+  - **Profile**: name the profile, check the source and destination, and see the exact command RoboXopy will run.
+- The batch import understands quoted paths, `^` line continuations, `%~dp0`, `cd`/`pushd`, `set` variables, environment variables and relative paths. It also understands `robocopy.exe` with a full path, and `start`/`call`/`cmd /c` prefixes.
+
 ## [1.1.1] - 2026-10-10
 
 ### Added

@@ -56,7 +56,7 @@
         </StackPanel>
 
         <!-- Navigation pane -->
-        <Grid x:Name="NavPane" Grid.Row="1" IsEnabled="{Binding Dialog.IsOpen, Converter={StaticResource InverseBool}}">
+        <Grid x:Name="NavPane" Grid.Row="1" IsEnabled="{Binding IsModalOpen, Converter={StaticResource InverseBool}}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -71,8 +71,23 @@
             <Grid Grid.Row="1" Margin="16,0,10,4">
                 <TextBlock Text="Profiles" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Style="{StaticResource IconButtonStyle}" Content="&#xE8B5;" ToolTip="Import profiles…"
-                            AutomationProperties.Name="Import profiles" Command="{Binding ImportProfilesCommand}" />
+                    <Button Style="{StaticResource IconButtonStyle}" Content="&#xE8B5;" ToolTip="Import…"
+                            AutomationProperties.Name="Import" c:DropDownMenu.IsEnabled="True">
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="RoboXopy profiles (.json)…" Command="{Binding ImportProfilesCommand}">
+                                    <MenuItem.Icon>
+                                        <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE8B5;" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="Robocopy batch file (.bat, .cmd)…" Command="{Binding ImportBatchFileCommand}">
+                                    <MenuItem.Icon>
+                                        <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE756;" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
                     <Button Style="{StaticResource IconButtonStyle}" Content="&#xE710;" ToolTip="New profile (Ctrl+N)"
                             AutomationProperties.Name="New profile" Command="{Binding NewProfileCommand}" />
                 </StackPanel>
@@ -170,7 +185,7 @@
         <!-- Content -->
         <Border Grid.Row="1" Grid.Column="1" Background="{DynamicResource LayerFillColorDefaultBrush}"
                 BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1,1,0,0" CornerRadius="8,0,0,0"
-                IsEnabled="{Binding Dialog.IsOpen, Converter={StaticResource InverseBool}}">
+                IsEnabled="{Binding IsModalOpen, Converter={StaticResource InverseBool}}">
             <Grid>
                 <v:ProfileView x:Name="ProfilePage" DataContext="{Binding SelectedProfile}"
                                Visibility="{Binding DataContext.ShowProfile, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
@@ -179,6 +194,261 @@
                 <v:EmptyStateView Visibility="{Binding ShowEmptyState, Converter={StaticResource BoolToVisibility}}" />
             </Grid>
         </Border>
+
+        <!-- Batch file import wizard -->
+        <Grid x:Name="ImportOverlay" Grid.RowSpan="2" Grid.ColumnSpan="2" Background="{DynamicResource SmokeFillColorDefaultBrush}"
+              DataContext="{Binding Import}" Visibility="{Binding IsOpen, Converter={StaticResource BoolToVisibility}}"
+              IsEnabled="{Binding DataContext.Dialog.IsOpen, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBool}}"
+              IsVisibleChanged="OnImportVisibleChanged" KeyboardNavigation.TabNavigation="Cycle">
+            <Grid.Resources>
+                <Style x:Key="NoteInfoBarStyle" TargetType="c:InfoBar" BasedOn="{StaticResource {x:Type c:InfoBar}}">
+                    <Setter Property="Severity" Value="Informational" />
+                    <Setter Property="Message" Value="{Binding Message}" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Severity}" Value="Error">
+                            <Setter Property="Severity" Value="Error" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Severity}" Value="Warning">
+                            <Setter Property="Severity" Value="Warning" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+                <DataTemplate x:Key="NoteTemplate">
+                    <c:InfoBar Style="{StaticResource NoteInfoBarStyle}" />
+                </DataTemplate>
+                <Style x:Key="CodeBlockStyle" TargetType="Border">
+                    <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorSecondaryBrush}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="CornerRadius" Value="4" />
+                    <Setter Property="Padding" Value="12,10" />
+                </Style>
+                <Style x:Key="CodeTextStyle" TargetType="TextBlock">
+                    <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+                    <Setter Property="FontSize" Value="12" />
+                    <Setter Property="TextWrapping" Value="Wrap" />
+                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                </Style>
+                <Style x:Key="WizardLabelStyle" TargetType="TextBlock">
+                    <Setter Property="VerticalAlignment" Value="Center" />
+                    <Setter Property="Margin" Value="0,0,16,0" />
+                </Style>
+            </Grid.Resources>
+
+            <Border Width="680" MaxHeight="600" Margin="40" HorizontalAlignment="Center" VerticalAlignment="Stretch" CornerRadius="8"
+                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" BorderBrush="{DynamicResource SurfaceStrokeColorDefaultBrush}"
+                    BorderThickness="1" AutomationProperties.Name="Import robocopy batch file">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="32" ShadowDepth="8" Direction="270" Opacity="0.28" Color="Black" />
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Header: title, file and stepper -->
+                    <Border CornerRadius="8,8,0,0" Background="{DynamicResource LayerFillColorAltBrush}" Padding="24,22,24,18"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                        <StackPanel>
+                            <TextBlock Text="Import robocopy batch file" Style="{StaticResource SubtitleTextBlockStyle}" FontSize="20" />
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0" ToolTip="{Binding FilePath}">
+                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE8A5;" FontSize="12" Margin="0,1,6,0"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Text="{Binding FileName}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           TextTrimming="CharacterEllipsis" MaxWidth="580" />
+                            </StackPanel>
+                            <ItemsControl ItemsSource="{Binding Steps}" Margin="0,18,0,0" Focusable="False">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:WizardStep}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Rectangle Width="40" Height="1" Margin="12,0" VerticalAlignment="Center"
+                                                       Fill="{DynamicResource ControlStrongStrokeColorDefaultBrush}"
+                                                       Visibility="{Binding IsFirst, Converter={StaticResource InverseBoolToVisibility}}" />
+                                            <Grid Width="22" Height="22">
+                                                <Ellipse x:Name="Circle" Stroke="{DynamicResource ControlStrongStrokeColorDefaultBrush}" StrokeThickness="1" />
+                                                <TextBlock x:Name="Number" Text="{Binding Number}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           Margin="0,0,0,1" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                <TextBlock x:Name="Check" Style="{StaticResource IconTextStyle}" Text="&#xE73E;" FontSize="11"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"
+                                                           Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                                            </Grid>
+                                            <TextBlock x:Name="StepTitle" Text="{Binding Title}" Margin="8,0,0,1" VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsDone}" Value="True">
+                                                <Setter TargetName="Circle" Property="Fill" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                                <Setter TargetName="Circle" Property="Stroke" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                                <Setter TargetName="Number" Property="Visibility" Value="Collapsed" />
+                                                <Setter TargetName="Check" Property="Visibility" Value="Visible" />
+                                                <Setter TargetName="StepTitle" Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                <Setter TargetName="Circle" Property="Fill" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                                <Setter TargetName="Circle" Property="Stroke" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                                <Setter TargetName="Number" Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                                                <Setter TargetName="Number" Property="FontWeight" Value="SemiBold" />
+                                                <Setter TargetName="StepTitle" Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                <Setter TargetName="StepTitle" Property="FontWeight" Value="SemiBold" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Body -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                  Focusable="False">
+                        <Grid Margin="24,20,24,20">
+                            <!-- Step 1: the robocopy command -->
+                            <StackPanel Visibility="{Binding IsCommandStep, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="{Binding CommandIntro}" TextWrapping="Wrap" Margin="0,0,0,16" />
+
+                                <StackPanel DataContext="{Binding Selected}"
+                                            Visibility="{Binding DataContext.HasMultipleCommands, RelativeSource={RelativeSource AncestorType=ScrollViewer}, Converter={StaticResource InverseBoolToVisibility}}">
+                                    <TextBlock Text="{Binding LineText}" Style="{StaticResource SecondaryTextStyle}" Margin="0,0,0,6" />
+                                    <Border Style="{StaticResource CodeBlockStyle}">
+                                        <TextBlock Text="{Binding Text}" Style="{StaticResource CodeTextStyle}" />
+                                    </Border>
+                                    <StackPanel Margin="0,12,0,0" Visibility="{Binding ShowRawText, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Text="As written in the file" Style="{StaticResource SecondaryTextStyle}" Margin="0,0,0,6" />
+                                        <TextBlock Text="{Binding RawText}" Style="{StaticResource CodeTextStyle}"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <ItemsControl ItemsSource="{Binding Commands}" Focusable="False"
+                                              Visibility="{Binding HasMultipleCommands, Converter={StaticResource BoolToVisibility}}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:BatchImportChoice}">
+                                            <RadioButton Style="{StaticResource ChoiceCardStyle}" Margin="0,0,0,8" GroupName="BatchImportCommand"
+                                                         IsChecked="{Binding IsSelected}" c:Ui.Description="{Binding LineText}"
+                                                         AutomationProperties.Name="{Binding Summary}">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Summary}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding Text}" Style="{StaticResource CodeTextStyle}" FontWeight="Normal" Margin="0,6,0,0"
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                </StackPanel>
+                                            </RadioButton>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <ItemsControl ItemsSource="{Binding BatchNotes}" ItemTemplate="{StaticResource NoteTemplate}" Margin="0,12,0,0" Focusable="False" />
+                            </StackPanel>
+
+                            <!-- Step 2: how each argument maps to RoboXopy settings -->
+                            <StackPanel Visibility="{Binding IsSettingsStep, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="Here's how each part of the command was imported. You can change any setting after the profile is created."
+                                           TextWrapping="Wrap" Margin="0,0,0,16" />
+                                <Border Style="{StaticResource CardStyle}" Padding="0">
+                                    <ItemsControl ItemsSource="{Binding Items}" Focusable="False" Grid.IsSharedSizeScope="True">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border x:Name="Row" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Padding="14,9,16,9">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="Auto" SharedSizeGroup="Argument" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock x:Name="KindIcon" Style="{StaticResource IconTextStyle}" Text="&#xE73E;" FontSize="14" Width="16"
+                                                                   Margin="0,2,12,0" VerticalAlignment="Top" ToolTip="Imported as a setting"
+                                                                   Foreground="{DynamicResource SystemFillColorSuccessBrush}" />
+                                                        <TextBlock x:Name="Argument" Grid.Column="1" Text="{Binding Argument}" Style="{StaticResource CodeTextStyle}"
+                                                                   MaxWidth="230" Margin="0,1,20,0" VerticalAlignment="Top" />
+                                                        <TextBlock Grid.Column="2" Text="{Binding Description}" TextWrapping="Wrap" VerticalAlignment="Top" />
+                                                    </Grid>
+                                                </Border>
+                                                <DataTemplate.Triggers>
+                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource PreviousData}}" Value="{x:Null}">
+                                                        <Setter TargetName="Row" Property="BorderThickness" Value="0" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Kind}" Value="Extra">
+                                                        <Setter TargetName="KindIcon" Property="Text" Value="&#xE943;" />
+                                                        <Setter TargetName="KindIcon" Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                        <Setter TargetName="KindIcon" Property="ToolTip" Value="Kept as an extra robocopy argument" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Kind}" Value="Dropped">
+                                                        <Setter TargetName="KindIcon" Property="Text" Value="&#xE711;" />
+                                                        <Setter TargetName="KindIcon" Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                                        <Setter TargetName="KindIcon" Property="ToolTip" Value="Not imported" />
+                                                        <Setter TargetName="Argument" Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                    </DataTrigger>
+                                                </DataTemplate.Triggers>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                                <ItemsControl ItemsSource="{Binding Notes}" ItemTemplate="{StaticResource NoteTemplate}" Margin="0,12,0,0" Focusable="False" />
+                            </StackPanel>
+
+                            <!-- Step 3: name and folders -->
+                            <StackPanel Visibility="{Binding IsProfileStep, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="Name the profile and check the folders." TextWrapping="Wrap" Margin="0,0,0,16" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="8" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="8" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="Name" Style="{StaticResource WizardLabelStyle}" />
+                                    <TextBox x:Name="ImportNameBox" Grid.Column="1" Grid.ColumnSpan="2"
+                                             Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Profile name" />
+                                    <TextBlock Grid.Row="2" Text="Source" Style="{StaticResource WizardLabelStyle}" />
+                                    <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource MonoTextBoxStyle}"
+                                             Text="{Binding Source, UpdateSourceTrigger=PropertyChanged}"
+                                             c:Placeholder.Text="Folder to copy from" AutomationProperties.Name="Source folder" />
+                                    <Button Grid.Row="2" Grid.Column="2" Margin="8,0,0,0" Command="{Binding BrowseSourceCommand}" Content="Browse…" />
+                                    <TextBlock Grid.Row="4" Text="Destination" Style="{StaticResource WizardLabelStyle}" />
+                                    <TextBox Grid.Row="4" Grid.Column="1" Style="{StaticResource MonoTextBoxStyle}"
+                                             Text="{Binding Destination, UpdateSourceTrigger=PropertyChanged}"
+                                             c:Placeholder.Text="Folder to copy to" AutomationProperties.Name="Destination folder" />
+                                    <Button Grid.Row="4" Grid.Column="2" Margin="8,0,0,0" Command="{Binding BrowseDestinationCommand}" Content="Browse…" />
+                                </Grid>
+
+                                <ItemsControl ItemsSource="{Binding Issues}" ItemTemplate="{StaticResource NoteTemplate}" Margin="0,16,0,0" Focusable="False" />
+
+                                <TextBlock Text="Command RoboXopy will run" Style="{StaticResource SecondaryTextStyle}" Margin="0,10,0,6" />
+                                <Border Style="{StaticResource CodeBlockStyle}">
+                                    <TextBlock Text="{Binding CommandPreview}" Style="{StaticResource CodeTextStyle}"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </ScrollViewer>
+
+                    <!-- Footer -->
+                    <Border Grid.Row="2" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Padding="24,16,24,20">
+                        <Grid>
+                            <Button Content="Back" MinWidth="96" HorizontalAlignment="Left" Command="{Binding BackCommand}"
+                                    Visibility="{Binding IsFirstStep, Converter={StaticResource InverseBoolToVisibility}}" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="Cancel" MinWidth="96" Command="{Binding CancelCommand}" />
+                                <Button x:Name="ImportPrimary" Style="{StaticResource AccentButtonStyle}" MinWidth="120" Margin="8,0,0,0"
+                                        Content="{Binding PrimaryText}" Command="{Binding PrimaryCommand}" IsDefault="{Binding IsOpen}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
 
         <!-- Content dialog overlay -->
         <Grid x:Name="DialogOverlay" Grid.RowSpan="2" Grid.ColumnSpan="2" Background="{DynamicResource SmokeFillColorDefaultBrush}"

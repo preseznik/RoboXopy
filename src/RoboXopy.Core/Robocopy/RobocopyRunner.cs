@@ -22,6 +22,9 @@ public static partial class RobocopyRunner
         }
     });
 
+    /// <summary>The console's OEM code page, which robocopy writes and cmd.exe reads batch files in.</summary>
+    internal static Encoding OemEncoding => ConsoleEncoding.Value;
+
     [LibraryImport("kernel32.dll")]
     private static partial uint GetOEMCP();
 

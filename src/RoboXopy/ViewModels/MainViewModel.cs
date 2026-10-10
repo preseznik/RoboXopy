@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using RoboXopy.Core.Models;
+using RoboXopy.Core.Robocopy;
 using RoboXopy.Core.Storage;
 
 namespace RoboXopy.ViewModels;
@@ -38,6 +39,8 @@ public sealed partial class MainViewModel : ObservableObject
             Host.SaveSettings();
         };
         Host.Settings.PropertyChanged += OnSettingsPropertyChanged;
+        Dialog.PropertyChanged += OnModalPropertyChanged;
+        Import.PropertyChanged += OnModalPropertyChanged;
 
         foreach (var profile in Host.Profiles.LoadAll().OrderBy(p => p.SortOrder).ThenBy(p => p.CreatedAt))
         {
@@ -62,6 +65,7 @@ public sealed partial class MainViewModel : ObservableObject
     public SettingsViewModel Settings { get; }
     public UpdateViewModel Updates { get; }
     public DialogViewModel Dialog { get; } = new();
+    public BatchImportViewModel Import { get; } = new();
     public ObservableCollection<ProfileViewModel> Profiles { get; } = [];
     public ICollectionView ProfilesView { get; }
 
@@ -79,6 +83,9 @@ public sealed partial class MainViewModel : ObservableObject
     public bool ShowProfile => !IsSettingsOpen && SelectedProfile is not null;
     public bool ShowEmptyState => !IsSettingsOpen && SelectedProfile is null;
     public bool AnyRunning => Profiles.Any(p => p.IsRunning);
+
+    /// <summary>A dialog or the import wizard covers the window, so the rest of it is disabled.</summary>
+    public bool IsModalOpen => Dialog.IsOpen || Import.IsOpen;
 
     public event EventHandler<RunFinishedEventArgs>? RunFinished;
     public event EventHandler? RunStateChanged;
@@ -114,6 +121,11 @@ public sealed partial class MainViewModel : ObservableObject
         Dialog.ShowAsync(title, message, confirmText, "Cancel", destructive);
 
     public Task AlertAsync(string title, string message) => Dialog.ShowAsync(title, message, "OK", null);
+
+    private void OnModalPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(DialogViewModel.IsOpen)) OnPropertyChanged(nameof(IsModalOpen));
+    }
 
     // ── Run notifications ───────────────────────────────────────────────
     public void NotifyRunStateChanged()
@@ -269,15 +281,22 @@ public sealed partial class MainViewModel : ObservableObject
         var dialog = new OpenFileDialog
         {
             Title = "Import profiles",
-            Filter = "RoboXopy profiles (*.json)|*.json|All files (*.*)|*.*",
+            Filter = "RoboXopy profiles (*.json)|*.json|Robocopy batch files (*.bat, *.cmd)|*.bat;*.cmd|All files (*.*)|*.*",
             Multiselect = true,
         };
         if (dialog.ShowDialog(System.Windows.Application.Current.MainWindow) != true) return;
 
         var imported = 0;
         var errors = new List<string>();
+        var batchFiles = new List<string>();
         foreach (var file in dialog.FileNames)
         {
+            if (IsBatchFile(file))
+            {
+                batchFiles.Add(file);
+                continue;
+            }
+
             try
             {
                 var json = await File.ReadAllTextAsync(file);
@@ -305,6 +324,57 @@ public sealed partial class MainViewModel : ObservableObject
         {
             await AlertAsync(imported > 0 ? $"Imported {imported} profile(s) with errors" : "Import failed", string.Join("\n", errors));
         }
+
+        foreach (var file in batchFiles)
+        {
+            await ImportBatchFileAsync(file);
+        }
+    }
+
+    private static bool IsBatchFile(string path) =>
+        Path.GetExtension(path).Equals(".bat", StringComparison.OrdinalIgnoreCase)
+        || Path.GetExtension(path).Equals(".cmd", StringComparison.OrdinalIgnoreCase);
+
+    [RelayCommand]
+    private async Task ImportBatchFile()
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Import robocopy batch file",
+            Filter = "Batch files (*.bat, *.cmd)|*.bat;*.cmd|All files (*.*)|*.*",
+        };
+        if (dialog.ShowDialog(System.Windows.Application.Current.MainWindow) != true) return;
+        await ImportBatchFileAsync(dialog.FileName);
+    }
+
+    /// <summary>Reads a batch file and walks the user through turning its robocopy command into a profile.</summary>
+    public async Task ImportBatchFileAsync(string path)
+    {
+        BatchReadResult batch;
+        try
+        {
+            batch = await Task.Run(() => BatchFileReader.Read(path));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException or NotSupportedException)
+        {
+            await AlertAsync("Couldn't read the batch file", ex.Message);
+            return;
+        }
+
+        if (batch.Commands.Count == 0)
+        {
+            await AlertAsync("No robocopy command found", $"RoboXopy couldn't find a line that runs robocopy in {Path.GetFileName(path)}.");
+            return;
+        }
+
+        var profile = await Import.ShowAsync(batch, UniqueName);
+        if (profile is null) return;
+
+        profile.Name = UniqueName(string.IsNullOrWhiteSpace(profile.Name) ? RobocopyCommandParser.DefaultName : profile.Name.Trim());
+        profile.SortOrder = NextSortOrder();
+        profile.CreatedAt = DateTimeOffset.Now;
+        var vm = Add(profile, Profiles.Count);
+        _ = vm.SyncTaskAsync();
     }
 
     private static IEnumerable<SyncProfile> ParseProfiles(string json)

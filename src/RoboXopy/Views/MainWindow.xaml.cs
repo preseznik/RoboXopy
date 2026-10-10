@@ -113,15 +113,44 @@ public partial class MainWindow : Window
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (_main.Dialog.IsOpen && e.Key == Key.Escape)
+        if (e.Key == Key.Escape)
         {
-            _main.Dialog.Close(false);
+            if (_main.Dialog.IsOpen) _main.Dialog.Close(false);
+            else if (_main.Import.IsOpen) _main.Import.CancelCommand.Execute(null);
+            else if (_main.IsSettingsOpen) _main.CloseSettingsCommand.Execute(null);
+            else return;
             e.Handled = true;
         }
-        else if (!_main.Dialog.IsOpen && e.Key == Key.Escape && _main.IsSettingsOpen)
+        else if (_main.IsModalOpen && IsWindowShortcut(e))
         {
-            _main.CloseSettingsCommand.Execute(null);
+            // The window's shortcuts act on what's behind the dialog or wizard.
             e.Handled = true;
+        }
+    }
+
+    private static bool IsWindowShortcut(KeyEventArgs e)
+    {
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        var modifiers = Keyboard.Modifiers;
+        return key == Key.F5 || (modifiers == ModifierKeys.Control && key is Key.N or Key.F or Key.OemComma);
+    }
+
+    private void OnImportVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is true)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () => ImportPrimary.Focus());
+        }
+        else
+        {
+            // Wait for the imported profile to be added and laid out so focus lands on it.
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+            {
+                if (ProfileList.SelectedItem is not null && ProfileList.ItemContainerGenerator.ContainerFromItem(ProfileList.SelectedItem) is UIElement item)
+                {
+                    item.Focus();
+                }
+            });
         }
     }
 
