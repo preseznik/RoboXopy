@@ -26,6 +26,9 @@ public sealed record CommandLineOptions
     /// <summary>Alternative data folder (profiles, history, logs, settings) instead of %APPDATA%\RoboXopy.</summary>
     public string? DataDir { get; init; }
 
+    /// <summary>Internal: this process was restarted through Explorer to shed RedirectionGuard, so don't try again.</summary>
+    public bool Relaunched { get; init; }
+
     public static CommandLineOptions Parse(IReadOnlyList<string> args)
     {
         var options = new CommandLineOptions();
@@ -80,6 +83,9 @@ public sealed record CommandLineOptions
                     break;
                 case "--uninstall-cleanup":
                     options = options with { UninstallCleanup = true };
+                    break;
+                case "--relaunched":
+                    options = options with { Relaunched = true };
                     break;
                 default:
                     throw new ArgumentException($"Unknown argument '{arg}'.");

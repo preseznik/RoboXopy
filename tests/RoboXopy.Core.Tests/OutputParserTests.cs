@@ -104,6 +104,16 @@ public class OutputParserTests
         var dir = RobocopyOutputParser.Parse("\t  New Dir          1\tC:\\src\\sub\\");
         Assert.Equal(OutputLineKind.Directory, dir.Kind);
         Assert.Equal(@"C:\src\sub\", dir.Name);
+        Assert.Equal(1, dir.Count);
+
+        var existing = RobocopyOutputParser.Parse("\t                   0\tC:\\src\\link\\");
+        Assert.Equal(OutputLineKind.Directory, existing.Kind);
+        Assert.Equal(0, existing.Count);
+        Assert.False(existing.IsExtra);
+
+        var extraDir = RobocopyOutputParser.Parse("\t*EXTRA Dir        -1\tC:\\dst\\old\\");
+        Assert.True(extraDir.IsExtra);
+        Assert.Equal(-1, extraDir.Count);
 
         var progress = RobocopyOutputParser.Parse(" 34.5%  ");
         Assert.Equal(OutputLineKind.Progress, progress.Kind);

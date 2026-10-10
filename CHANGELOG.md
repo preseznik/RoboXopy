@@ -4,6 +4,16 @@ All notable changes to RoboXopy are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-10-10
+
+### Fixed
+
+- After the installer or the updater started RoboXopy, runs and previews couldn't follow junctions or symbolic links in the source. Robocopy skipped those folders without an error and the run ended as **Failed**. Setup starts programs with Windows' redirection guard, which blocks following links, and robocopy inherited it. RoboXopy now restarts itself without the guard.
+
+### Added
+
+- When robocopy can't open some source folders, the run names them and says why: folders your account can't open, junctions or symbolic links whose target is missing, or links blocked by the redirection guard. Robocopy counts these as failed folders but doesn't report them as errors. The note shows in the run output, in the history and in the log.
+
 ## [1.2.1] - 2026-10-10
 
 ### Fixed

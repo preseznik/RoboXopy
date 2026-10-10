@@ -1,3 +1,5 @@
+using RoboXopy.Core.Platform;
+using RoboXopy.Core.Robocopy;
 using RoboXopy.Core.Storage;
 using RoboXopy.Infrastructure;
 
@@ -34,6 +36,15 @@ public static class Program
         if (options.UninstallCleanup) return HeadlessRunner.UninstallCleanup();
         if (options.ListProfiles) return HeadlessRunner.ListProfiles();
         if (options.RunProfile is not null) return HeadlessRunner.Run(options);
+
+        // An installer (Inno Setup 7) may have started us with RedirectionGuard, which every robocopy we start
+        // would inherit and then skip junctions. It can't be switched off, so restart through Explorer instead.
+        if (RedirectionGuard.IsEnforced && !options.Relaunched
+            && Environment.ProcessPath is { } exe
+            && DesktopLauncher.TryStart(exe, CommandLine.Join(args.Append("--relaunched")), Path.GetDirectoryName(exe)!))
+        {
+            return 0;
+        }
 
         using var instance = new SingleInstance(AppPaths.Default.Root);
         if (!instance.IsFirstInstance)

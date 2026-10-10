@@ -517,12 +517,14 @@ public sealed partial class ProfileViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task Run()
     {
-        if (LastRun is { DryRun: true, HasWarnings: true } preview
-            && preview.CommandLine == RobocopyCommandBuilder.BuildCommandLine(Snapshot(), dryRun: true))
+        // Skipped (unreadable) folders aren't removed from the destination, so only the history-based warnings need a confirmation.
+        var unusual = LastRun is { DryRun: true } preview
+                      && preview.CommandLine == RobocopyCommandBuilder.BuildCommandLine(Snapshot(), dryRun: true)
+            ? preview.Findings?.Where(f => f.Severity == FindingSeverity.Warning && f.Kind != RunFindingKind.UnreadableFolders).ToList()
+            : null;
+        if (unusual is { Count: > 0 })
         {
-            var findings = preview.Findings!
-                .Where(f => f.Severity == FindingSeverity.Warning)
-                .Select(f => "• " + f.Message);
+            var findings = unusual.Select(f => "• " + f.Message);
             var ok = await _main.ConfirmAsync(
                 "The last preview looked unusual",
                 $"{string.Join("\n", findings)}\n\nCheck that the source and destination are the ones you expect before running “{DisplayName}”.",

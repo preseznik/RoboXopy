@@ -149,6 +149,42 @@ public sealed class StorageAndExecutionTests : IDisposable
     }
 
     [Fact]
+    public async Task Executor_NamesSourceFoldersRobocopyCouldNotOpen()
+    {
+        var src = Directory.CreateDirectory(Path.Combine(_root, "src3")).FullName;
+        var locked = Directory.CreateDirectory(Path.Combine(src, "locked")).FullName;
+        File.WriteAllText(Path.Combine(locked, "a.txt"), "a");
+        var user = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+
+        static void Icacls(string args)
+        {
+            using var icacls = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("icacls.exe", args)
+                { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true })!;
+            icacls.WaitForExit();
+            Assert.Equal(0, icacls.ExitCode);
+        }
+
+        Icacls($"\"{locked}\" /deny \"{user}:(OI)(CI)(RD)\"");
+        try
+        {
+            var profile = new SyncProfile { Name = "Locked", Source = src, Destination = Path.Combine(_root, "dst3") };
+            var executor = new ProfileExecutor(_paths, new HistoryStore(_paths), () => new AppSettings());
+
+            var preview = await executor.ExecuteAsync(new RunRequest(profile, RunTrigger.Manual, DryRun: true));
+
+            Assert.Equal(RunOutcome.Failed, preview.Outcome);
+            var finding = Assert.Single(preview.Findings!, f => f.Kind == RunFindingKind.UnreadableFolders);
+            Assert.Contains(locked, finding.Message);
+            Assert.Contains("fix their permissions", finding.Message);
+            Assert.Contains("RoboXopy: skipped – ", File.ReadAllText(preview.LogFile!));
+        }
+        finally
+        {
+            Icacls($"\"{locked}\" /remove:d \"{user}\"");
+        }
+    }
+
+    [Fact]
     public async Task Executor_SkipsWhenAlreadyRunning()
     {
         var src = Directory.CreateDirectory(Path.Combine(_root, "src2")).FullName;

@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text;
 using RoboXopy.Core.Insights;
 using RoboXopy.Core.Models;
+using RoboXopy.Core.Platform;
 using RoboXopy.Core.Robocopy;
 using RoboXopy.Core.Storage;
 
@@ -108,13 +109,20 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
         var message = RobocopyExitCode.Describe(result.ExitCode, request.DryRun, record.PurgesExtras);
         record.Outcome = outcome;
         record.Findings = AnalyzeFindings(record);
+        if (result.ExitCode != RobocopyExitCode.Cancelled
+            && UnreadableFolders.Analyze(record, result.Lines.Select(RobocopyOutputParser.Parse), RedirectionGuard.IsEnforced, arguments) is { } unreadable)
+        {
+            (record.Findings ??= []).Insert(0, unreadable);
+        }
 
         lock (logSync)
         {
             log.WriteLine();
             foreach (var finding in record.Findings ?? [])
             {
-                log.WriteLine($"RoboXopy: {(finding.Severity == FindingSeverity.Warning ? "unusual" : "note")} – {finding.Message}");
+                var label = finding.Kind == RunFindingKind.UnreadableFolders ? "skipped"
+                    : finding.Severity == FindingSeverity.Warning ? "unusual" : "note";
+                log.WriteLine($"RoboXopy: {label} – {finding.Message}");
             }
             log.WriteLine($"RoboXopy: finished in {stopwatch.Elapsed:hh\\:mm\\:ss} with exit code {result.ExitCode} – {message}");
         }

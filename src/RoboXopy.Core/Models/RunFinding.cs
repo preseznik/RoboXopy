@@ -8,6 +8,8 @@ public enum RunFindingKind
     SourceShrank,
     /// <summary>Far more data is copied than usual.</summary>
     LargeChange,
+    /// <summary>Robocopy couldn't open some source folders and skipped their contents without reporting an error.</summary>
+    UnreadableFolders,
 }
 
 public enum FindingSeverity
@@ -16,7 +18,7 @@ public enum FindingSeverity
     Warning,
 }
 
-/// <summary>Something unusual about a run compared with the profile's own history.</summary>
+/// <summary>Something unusual about a run, mostly compared with the profile's own history.</summary>
 public sealed record RunFinding
 {
     public RunFindingKind Kind { get; init; }

@@ -20,6 +20,9 @@ public sealed record OutputLine(OutputLineKind Kind, string Text)
     public string? Name { get; init; }
     public long? Size { get; init; }
 
+    /// <summary>For a directory line, the number of files robocopy found in it (-1 for an extra directory).</summary>
+    public long? Count { get; init; }
+
     public bool IsExtra => Status?.Contains("EXTRA", StringComparison.OrdinalIgnoreCase) == true || Status?.StartsWith('*') == true;
 }
 
@@ -81,6 +84,7 @@ public static partial class RobocopyOutputParser
             {
                 Status = dir.Groups["status"].Value.Trim(),
                 Name = dir.Groups["name"].Value.Trim(),
+                Count = long.TryParse(dir.Groups["count"].Value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var count) ? count : null,
             };
         }
 

@@ -99,10 +99,10 @@ public sealed partial class RunSessionViewModel : ObservableObject
 
     [ObservableProperty] private bool _hasWarningFindings;
     [ObservableProperty] private bool _isResultRedundant;
+    [ObservableProperty] private string _findingsTitle = "";
 
     public bool HasBreakdown => Breakdown is { Count: > 0 };
     public bool HasFindings => !string.IsNullOrEmpty(FindingsText);
-    public string FindingsTitle => DryRun ? "This preview looks unusual" : "This run looked unusual";
 
     public string BytesText => RunFormatting.FormatBytes(ByteCount);
     public string FilesLabel => DryRun ? "to copy" : "copied";
@@ -150,6 +150,9 @@ public sealed partial class RunSessionViewModel : ObservableObject
         if (record.Findings is { Count: > 0 } findings)
         {
             HasWarningFindings = record.HasWarnings;
+            FindingsTitle = findings.All(f => f.Kind == RunFindingKind.UnreadableFolders)
+                ? "Some source folders were skipped"
+                : DryRun ? "This preview looks unusual" : "This run looked unusual";
             FindingsText = string.Join(Environment.NewLine, findings.Select(f => f.Message));
         }
     }

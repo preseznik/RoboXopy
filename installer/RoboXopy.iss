@@ -73,6 +73,8 @@ ArchitecturesAllowed=x86compatible
 MinVersion=10.0.14393
 
 ; Close a running RoboXopy before replacing it, and start it again afterwards (the app registers for this).
+; Setup keeps RedirectionGuard on; RoboXopy restarts itself through Explorer when it inherits it, because
+; robocopy would otherwise skip junctions and symbolic links in the user's folders.
 CloseApplications=yes
 RestartApplications=yes
 
