@@ -1,0 +1,27 @@
+<Project>
+  <Import Project="Version.props" />
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Release binaries carry their symbols, so crash logs keep file/line info without loose .pdb files. -->
+    <DebugType Condition="'$(Configuration)' == 'Release'">embedded</DebugType>
+  </PropertyGroup>
+
+  <!--
+    Version = MAJOR.MINOR.PATCH[-VersionSuffix]            e.g. 1.2.0 or 1.2.0-beta.1
+    FileVersion = MAJOR.MINOR.PATCH.BuildNumber              e.g. 1.2.0.14 (Explorer > Properties > Details)
+    InformationalVersion = Version+SourceRevisionId          e.g. 1.2.0+build.14.20260518
+    Local builds that don't go through tools\publish.ps1 are tagged "+dev".
+  -->
+  <PropertyGroup>
+    <SourceRevisionId Condition="'$(SourceRevisionId)' == ''">dev</SourceRevisionId>
+    <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
+    <FileVersion>$(VersionPrefix).$(BuildNumber)</FileVersion>
+    <Company>RoboXopy</Company>
+    <Product>RoboXopy</Product>
+    <Copyright>Copyright © 2026</Copyright>
+  </PropertyGroup>
+</Project>

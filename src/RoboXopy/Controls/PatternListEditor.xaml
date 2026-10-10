@@ -1,0 +1,52 @@
+<UserControl x:Class="RoboXopy.Controls.PatternListEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:RoboXopy.Controls"
+             x:Name="Root">
+    <StackPanel>
+        <ItemsControl ItemsSource="{Binding Items, ElementName=Root}" Focusable="False">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel Margin="0,0,0,4" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Style="{StaticResource PatternChipStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding}" VerticalAlignment="Center" FontFamily="Cascadia Mono, Consolas"
+                                       FontSize="12" Margin="10,0,2,0" MaxWidth="420" TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding}" />
+                            <Button Style="{StaticResource ChipRemoveButtonStyle}"
+                                    Click="OnRemoveClick" Tag="{Binding}"
+                                    ToolTip="Remove" AutomationProperties.Name="Remove" />
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="Input" KeyDown="OnInputKeyDown" MinWidth="160"
+                     c:Placeholder.Text="{Binding Placeholder, ElementName=Root}"
+                     AutomationProperties.Name="{Binding Placeholder, ElementName=Root}" />
+            <Button Grid.Column="1" Margin="8,0,0,0" Click="OnAddClick" ToolTip="Add (Enter)" VerticalAlignment="Stretch" AutomationProperties.Name="Add">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE710;" Margin="0,0,8,0" />
+                    <TextBlock Text="Add" />
+                </StackPanel>
+            </Button>
+            <Button Grid.Column="2" Margin="8,0,0,0" Click="OnBrowseClick" VerticalAlignment="Stretch" AutomationProperties.Name="Browse for folder"
+                    Visibility="{Binding AllowBrowseFolders, ElementName=Root, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE838;" Margin="0,0,8,0" />
+                    <TextBlock Text="Browse…" />
+                </StackPanel>
+            </Button>
+        </Grid>
+    </StackPanel>
+</UserControl>

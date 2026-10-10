@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/RoboXopy.Core/RoboXopy.Core.csproj" />
+    <Project Path="src/RoboXopy/RoboXopy.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RoboXopy.Core.Tests/RoboXopy.Core.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>RoboXopy</RootNamespace>
+    <AssemblyName>RoboXopy</AssemblyName>
+    <StartupObject>RoboXopy.Program</StartupObject>
+    <ApplicationIcon>Assets\RoboXopy.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyTitle>RoboXopy</AssemblyTitle>
+    <Description>RoboXopy – profiles, schedules and a friendly UI for Windows robocopy</Description>
+    <!-- WPF0001: ThemeMode (Fluent) is marked experimental. -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <!-- Publishing produces a single RoboXopy.exe (see tools\publish.ps1). -->
+  <PropertyGroup>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile Condition="'$(SelfContained)' == 'true'">true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WinForms is only used for the tray icon; keep its types out of the global namespace. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+    <Using Include="System.IO" />
+    <!-- Program.Main owns startup (single instance, headless run mode), so App.xaml must not generate one. -->
+    <ApplicationDefinition Remove="App.xaml" />
+    <Page Include="App.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RoboXopy.Core\RoboXopy.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Logo.png" />
+    <Resource Include="Assets\RoboXopy.ico" />
+    <EmbeddedResource Include="Assets\RoboXopy.ico" LogicalName="RoboXopy.ico" />
+  </ItemGroup>
+
+</Project>

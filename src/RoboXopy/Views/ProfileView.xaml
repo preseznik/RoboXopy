@@ -1,0 +1,1005 @@
+<UserControl x:Class="RoboXopy.Views.ProfileView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:RoboXopy.Controls"
+             xmlns:m="clr-namespace:RoboXopy.Core.Models;assembly=RoboXopy.Core">
+    <UserControl.Resources>
+        <!-- Editable page title: looks like a heading until hovered/focused. -->
+        <Style x:Key="TitleTextBoxStyle" TargetType="TextBox">
+            <Setter Property="FontSize" Value="24" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="CaretBrush" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="SelectionBrush" Value="{DynamicResource AccentFillColorSelectedTextBackgroundBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Padding" Value="10,1,10,3" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1" CornerRadius="4" SnapsToDevicePixels="True">
+                            <Grid>
+                                <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" Focusable="False"
+                                              HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden" />
+                                <Border x:Name="Underline" Height="2" VerticalAlignment="Bottom" CornerRadius="0,0,4,4"
+                                        Background="{DynamicResource AccentFillColorDefaultBrush}" Visibility="Collapsed" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ControlFillColorInputActiveBrush}" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                                <Setter TargetName="Underline" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,16,0" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+        </Style>
+
+        <Style x:Key="FlagCheckBoxStyle" TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+            <Setter Property="Margin" Value="0,0,20,4" />
+            <Setter Property="MinWidth" Value="150" />
+        </Style>
+
+        <Style x:Key="InlineUnitStyle" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        </Style>
+
+        <!-- Tab body: scrollable, 32px gutters, content capped at 1000px and left-aligned. -->
+        <Style x:Key="TabScrollStyle" TargetType="ScrollViewer" BasedOn="{StaticResource {x:Type ScrollViewer}}">
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="Focusable" Value="False" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid x:Name="LayoutRoot">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" MinHeight="160" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition x:Name="SplitterRow" Height="Auto" />
+            <RowDefinition x:Name="OutputRow" Height="0" />
+        </Grid.RowDefinitions>
+
+        <!-- ═══ Header ═══════════════════════════════════════════════════ -->
+        <Grid Margin="21,20,32,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBox x:Name="NameBox" Style="{StaticResource TitleTextBoxStyle}" HorizontalAlignment="Left" MinWidth="200" MaxWidth="560"
+                         Text="{Binding Model.Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Profile name"
+                         c:TextBoxBehavior.CommitOnEnter="True" />
+                <StackPanel Orientation="Horizontal" Margin="11,4,0,0">
+                    <Ellipse Style="{StaticResource StatusDotStyle}" VerticalAlignment="Center" Margin="0,1,8,0" />
+                    <TextBlock Text="{Binding LastRunText}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Text="  ·  " Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                    <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE787;" FontSize="12" Margin="0,1,6,0"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                        <Run Text="Next run:" /> <Run Text="{Binding NextRunText, Mode=OneWay}" />
+                    </TextBlock>
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Margin="16,4,0,0">
+                <Button Style="{StaticResource ToolbarAccentButtonStyle}" Command="{Binding RunCommand}" ToolTip="Run this sync now (F5)"
+                        AutomationProperties.Name="Run"
+                        Visibility="{Binding IsRunning, Converter={StaticResource InverseBoolToVisibility}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE768;" FontSize="14" Margin="0,0,8,0" />
+                        <TextBlock Text="Run" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource ToolbarButtonStyle}" Command="{Binding StopCommand}" ToolTip="Stop the running sync"
+                        AutomationProperties.Name="Stop sync"
+                        Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE71A;" FontSize="14" Margin="0,0,8,0"
+                                   Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
+                        <TextBlock Text="Stop" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource ToolbarButtonStyle}" Margin="8,0,0,0" Command="{Binding PreviewCommand}" AutomationProperties.Name="Preview"
+                        ToolTip="Show what would be copied or deleted, without changing anything (Shift+F5)">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE890;" FontSize="14" Margin="0,0,8,0" />
+                        <TextBlock Text="Preview" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="MoreButton" Style="{StaticResource ToolbarButtonStyle}" Margin="8,0,0,0" Padding="10,6,10,7"
+                        c:DropDownMenu.IsEnabled="True" ToolTip="More options" AutomationProperties.Name="More options"
+                        Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}">
+                    <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE712;" FontSize="14" />
+                    <Button.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Duplicate" CommandParameter="{Binding}"
+                                      Command="{Binding PlacementTarget.Tag.DuplicateProfileCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                                <MenuItem.Icon>
+                                    <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE8C8;" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Export…" CommandParameter="{Binding}"
+                                      Command="{Binding PlacementTarget.Tag.ExportProfileCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                                <MenuItem.Icon>
+                                    <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xEDE1;" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem Header="Open logs folder" Command="{Binding OpenLogsFolderCommand}">
+                                <MenuItem.Icon>
+                                    <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE838;" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Open last log" Command="{Binding OpenLastLogCommand}" IsEnabled="{Binding HasLastLog}">
+                                <MenuItem.Icon>
+                                    <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE8A5;" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Copy command line" Command="{Binding CopyCommandLineCommand}">
+                                <MenuItem.Icon>
+                                    <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE756;" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem Header="Move up" CommandParameter="{Binding}"
+                                      Command="{Binding PlacementTarget.Tag.MoveUpCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                                <MenuItem.Icon>
+                                    <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE70E;" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Move down" CommandParameter="{Binding}"
+                                      Command="{Binding PlacementTarget.Tag.MoveDownCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                                <MenuItem.Icon>
+                                    <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE70D;" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem Header="Delete profile…" CommandParameter="{Binding}" Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                                      Command="{Binding PlacementTarget.Tag.DeleteProfileCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                                <MenuItem.Icon>
+                                    <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE74D;" Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- ═══ Info bars ════════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="1" Margin="32,4,32,4">
+            <c:InfoBar Severity="Error" Title="Couldn't save" Message="{Binding SaveError}"
+                       Visibility="{Binding SaveError, Converter={StaticResource NullToVisibility}}" />
+            <c:InfoBar Severity="Error" Title="Task Scheduler" Message="{Binding TaskError}"
+                       Visibility="{Binding TaskError, Converter={StaticResource NullToVisibility}}">
+                <Button Content="Try again" Command="{Binding ReRegisterTaskCommand}" />
+            </c:InfoBar>
+            <c:InfoBar Severity="Informational" Title="Running elsewhere"
+                       Message="This profile is being synced by another RoboXopy window or a scheduled task. You can run it again when it finishes."
+                       Visibility="{Binding IsRunningExternally, Converter={StaticResource BoolToVisibility}}" />
+            <ItemsControl ItemsSource="{Binding Issues}" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <c:InfoBar Message="{Binding Message}">
+                            <c:InfoBar.Style>
+                                <Style TargetType="c:InfoBar" BasedOn="{StaticResource {x:Type c:InfoBar}}">
+                                    <Setter Property="Severity" Value="Informational" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Severity}" Value="Error">
+                                            <Setter Property="Severity" Value="Error" />
+                                            <Setter Property="Title" Value="Can't run" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Severity}" Value="Warning">
+                                            <Setter Property="Severity" Value="Warning" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </c:InfoBar.Style>
+                        </c:InfoBar>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <!-- ═══ Tabs ═════════════════════════════════════════════════════ -->
+        <TabControl x:Name="Tabs" Grid.Row="2" Style="{StaticResource PivotTabControlStyle}" Padding="12,0,12,0">
+            <TabControl.Resources>
+                <Style TargetType="TabItem" BasedOn="{StaticResource PivotTabItemStyle}" />
+            </TabControl.Resources>
+
+            <!-- ── General ─────────────────────────────────────────────── -->
+            <TabItem Header="General">
+                <ScrollViewer Style="{StaticResource TabScrollStyle}">
+                    <Grid Margin="32,4,32,32">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MaxWidth="1000" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Folders" Style="{StaticResource SectionHeaderStyle}" />
+                            <Border Style="{StaticResource CardStyle}" Padding="16,14,12,14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Text="Source" Style="{StaticResource FieldLabelStyle}" />
+                                    <TextBox x:Name="SourceBox" Grid.Column="1" Style="{StaticResource MonoTextBoxStyle}"
+                                             Text="{Binding Model.Source, UpdateSourceTrigger=PropertyChanged}"
+                                             c:Placeholder.Text="Folder to copy from, e.g. C:\Users\me\Documents or \\server\share"
+                                             AutomationProperties.Name="Source folder" />
+                                    <Button Grid.Column="2" Margin="8,0,0,0" Command="{Binding BrowseSourceCommand}" Content="Browse…" />
+                                    <Button Grid.Column="3" Margin="4,0,0,0" Style="{StaticResource IconButtonStyle}" Content="&#xE838;"
+                                            Command="{Binding OpenSourceCommand}" ToolTip="Open in File Explorer"
+                                            AutomationProperties.Name="Open source folder" />
+
+                                    <Button Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" Margin="0,6,0,6"
+                                            Style="{StaticResource SubtleButtonStyle}" Padding="8,4"
+                                            Command="{Binding SwapCommand}" ToolTip="Swap source and destination" AutomationProperties.Name="Swap">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE8AB;" FontSize="13" Margin="0,0,8,0"
+                                                       RenderTransformOrigin="0.5,0.5">
+                                                <TextBlock.RenderTransform>
+                                                    <RotateTransform Angle="90" />
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
+                                            <TextBlock Text="Swap" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                    </Button>
+
+                                    <TextBlock Grid.Row="2" Text="Destination" Style="{StaticResource FieldLabelStyle}" />
+                                    <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource MonoTextBoxStyle}"
+                                             Text="{Binding Model.Destination, UpdateSourceTrigger=PropertyChanged}"
+                                             c:Placeholder.Text="Folder to copy to, e.g. D:\Backup\Documents"
+                                             AutomationProperties.Name="Destination folder" />
+                                    <Button Grid.Row="2" Grid.Column="2" Margin="8,0,0,0" Command="{Binding BrowseDestinationCommand}" Content="Browse…" />
+                                    <Button Grid.Row="2" Grid.Column="3" Margin="4,0,0,0" Style="{StaticResource IconButtonStyle}" Content="&#xE838;"
+                                            Command="{Binding OpenDestinationCommand}" ToolTip="Open in File Explorer"
+                                            AutomationProperties.Name="Open destination folder" />
+                                </Grid>
+                            </Border>
+
+                            <TextBlock Text="How to sync" Style="{StaticResource SectionHeaderStyle}" />
+                            <UniformGrid Columns="2" Margin="0,0,-8,0">
+                                <RadioButton Style="{StaticResource ChoiceCardStyle}" GroupName="CopyMode" Content="Copy"
+                                             c:Ui.Icon="&#xE8C8;" c:Ui.Description="Copy new and changed files. Nothing is ever deleted."
+                                             IsChecked="{Binding Options.Mode, Converter={StaticResource EnumToBool}, ConverterParameter=Copy}" />
+                                <RadioButton Style="{StaticResource ChoiceCardStyle}" GroupName="CopyMode" Content="Mirror"
+                                             c:Ui.Icon="&#xE895;" c:Ui.Description="Make the destination an exact copy. Files that aren't in the source are deleted."
+                                             IsChecked="{Binding Options.Mode, Converter={StaticResource EnumToBool}, ConverterParameter=Mirror}" />
+                                <RadioButton Style="{StaticResource ChoiceCardStyle}" GroupName="CopyMode" Content="Move files"
+                                             c:Ui.Icon="&#xE8DE;" c:Ui.Description="Copy, then delete the copied files from the source. Folders stay."
+                                             IsChecked="{Binding Options.Mode, Converter={StaticResource EnumToBool}, ConverterParameter=MoveFiles}" />
+                                <RadioButton Style="{StaticResource ChoiceCardStyle}" GroupName="CopyMode" Content="Move files and folders"
+                                             c:Ui.Icon="&#xE8B7;" c:Ui.Description="Copy, then delete both files and folders from the source."
+                                             IsChecked="{Binding Options.Mode, Converter={StaticResource EnumToBool}, ConverterParameter=MoveAll}" />
+                            </UniformGrid>
+
+                            <c:InfoBar Margin="0,2,0,4" Message="{Binding Explanation}">
+                                <c:InfoBar.Style>
+                                    <Style TargetType="c:InfoBar" BasedOn="{StaticResource {x:Type c:InfoBar}}">
+                                        <Setter Property="Severity" Value="Informational" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDestructive}" Value="True">
+                                                <Setter Property="Severity" Value="Warning" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </c:InfoBar.Style>
+                            </c:InfoBar>
+
+                            <c:SettingsCard Icon="&#xE8B7;" Header="Subfolders" Margin="0,8,0,4"
+                                            Description="Choose whether to include folders inside the source."
+                                            Visibility="{Binding UsesSubdirectoryOption, Converter={StaticResource BoolToVisibility}}">
+                                <ComboBox MinWidth="260" SelectedValuePath="Tag" SelectedValue="{Binding Options.Subdirectories}"
+                                          AutomationProperties.Name="Subfolders">
+                                    <ComboBoxItem Content="All subfolders, including empty ones (/E)" Tag="{x:Static m:SubdirectoryMode.All}" />
+                                    <ComboBoxItem Content="Subfolders, but skip empty ones (/S)" Tag="{x:Static m:SubdirectoryMode.NonEmpty}" />
+                                    <ComboBoxItem Content="Top folder only" Tag="{x:Static m:SubdirectoryMode.None}" />
+                                </ComboBox>
+                            </c:SettingsCard>
+                            <c:SettingsCard Icon="&#xE74D;" Header="Delete destination files that aren't in the source (/PURGE)"
+                                            Description="Removes extra files and folders from the destination without copying everything again."
+                                            Visibility="{Binding UsesPurgeOption, Converter={StaticResource BoolToVisibility}}">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.Purge}"
+                                          AutomationProperties.Name="Purge" />
+                            </c:SettingsCard>
+                        </StackPanel>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ── Filters ─────────────────────────────────────────────── -->
+            <TabItem Header="Filters">
+                <ScrollViewer Style="{StaticResource TabScrollStyle}">
+                    <Grid Margin="32,4,32,32">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MaxWidth="1000" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Files and folders" Style="{StaticResource SectionHeaderStyle}" />
+                            <c:SettingsCard Icon="&#xE8A5;" Header="Only include these files" IsContentBelow="True"
+                                            Description="Wildcards such as *.docx or report-??.xlsx. Leave empty to include every file.">
+                                <c:PatternListEditor Items="{Binding Options.IncludeFiles}" Placeholder="*.docx" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Icon="&#xE71C;" Header="Exclude files" IsContentBelow="True"
+                                            Description="File names, wildcards or full paths to skip (/XF).">
+                                <c:PatternListEditor Items="{Binding Options.ExcludeFiles}" Placeholder="*.tmp" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Icon="&#xE8B7;" Header="Exclude folders" IsContentBelow="True"
+                                            Description="Folder names, wildcards or full paths to skip, including everything inside them (/XD).">
+                                <c:PatternListEditor Items="{Binding Options.ExcludeDirectories}" Placeholder="node_modules" AllowBrowseFolders="True"
+                                                     BrowseRoot="{Binding Model.Source}" />
+                            </c:SettingsCard>
+
+                            <TextBlock Text="Which files to copy" Style="{StaticResource SectionHeaderStyle}" />
+                            <c:SettingsCard Header="Skip files that are older than the destination copy (/XO)"
+                                            Description="Never overwrite a newer file in the destination.">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.ExcludeOlder}" AutomationProperties.Name="Exclude older" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Header="Skip files that are newer than the destination copy (/XN)">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.ExcludeNewer}" AutomationProperties.Name="Exclude newer" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Header="Skip changed files (/XC)" Description="Files with the same timestamp but a different size.">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.ExcludeChanged}" AutomationProperties.Name="Exclude changed" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Header="Only update files that already exist in the destination (/XL)"
+                                            Description="New source files are not copied.">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.ExcludeLonely}" AutomationProperties.Name="Exclude lonely" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Header="Ignore extra files in the destination (/XX)"
+                                            Description="Files that only exist in the destination are left alone, even when mirroring or purging.">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.ExcludeExtra}" AutomationProperties.Name="Exclude extra" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Header="Copy identical files again (/IS)">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.IncludeSame}" AutomationProperties.Name="Include same" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Header="Copy files whose attributes changed (/IT)" Description="Same size and time, but different attributes.">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.IncludeTweaked}" AutomationProperties.Name="Include tweaked" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Header="Archive attribute">
+                                <ComboBox MinWidth="260" SelectedValuePath="Tag" SelectedValue="{Binding Options.Archive}" AutomationProperties.Name="Archive attribute">
+                                    <ComboBoxItem Content="Ignore it" Tag="{x:Static m:ArchiveMode.Ignore}" />
+                                    <ComboBoxItem Content="Only files with it set (/A)" Tag="{x:Static m:ArchiveMode.OnlyArchived}" />
+                                    <ComboBoxItem Content="Only files with it set, then clear it (/M)" Tag="{x:Static m:ArchiveMode.OnlyArchivedAndReset}" />
+                                </ComboBox>
+                            </c:SettingsCard>
+
+                            <TextBlock Text="Age and size" Style="{StaticResource SectionHeaderStyle}" />
+                            <c:SettingsCard Icon="&#xE787;" Header="Skip files older than" Description="Leave empty for no limit (/MAXAGE).">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBox Style="{StaticResource NumberBoxStyle}" Text="{Binding Options.MaxAgeDays, TargetNullValue=''}"
+                                             AutomationProperties.Name="Maximum age in days" />
+                                    <TextBlock Text="days" Style="{StaticResource InlineUnitStyle}" MinWidth="32" />
+                                </StackPanel>
+                            </c:SettingsCard>
+                            <c:SettingsCard Icon="&#xE787;" Header="Skip files newer than" Description="Leave empty for no limit (/MINAGE).">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBox Style="{StaticResource NumberBoxStyle}" Text="{Binding Options.MinAgeDays, TargetNullValue=''}"
+                                             AutomationProperties.Name="Minimum age in days" />
+                                    <TextBlock Text="days" Style="{StaticResource InlineUnitStyle}" MinWidth="32" />
+                                </StackPanel>
+                            </c:SettingsCard>
+                            <c:SettingsCard Icon="&#xE7B8;" Header="Skip files larger than" Description="Leave empty for no limit (/MAX).">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBox Style="{StaticResource NumberBoxStyle}" Text="{Binding MaxFileSize.Text, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="Maximum file size" />
+                                    <ComboBox Margin="8,0,0,0" MinWidth="72" ItemsSource="{Binding MaxFileSize.Units}" SelectedItem="{Binding MaxFileSize.Unit}"
+                                              AutomationProperties.Name="Maximum file size unit" />
+                                </StackPanel>
+                            </c:SettingsCard>
+                            <c:SettingsCard Icon="&#xE7B8;" Header="Skip files smaller than" Description="Leave empty for no limit (/MIN).">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBox Style="{StaticResource NumberBoxStyle}" Text="{Binding MinFileSize.Text, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="Minimum file size" />
+                                    <ComboBox Margin="8,0,0,0" MinWidth="72" ItemsSource="{Binding MinFileSize.Units}" SelectedItem="{Binding MinFileSize.Unit}"
+                                              AutomationProperties.Name="Minimum file size unit" />
+                                </StackPanel>
+                            </c:SettingsCard>
+                        </StackPanel>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ── Copy options ────────────────────────────────────────── -->
+            <TabItem Header="Copy options">
+                <ScrollViewer Style="{StaticResource TabScrollStyle}">
+                    <Grid Margin="32,4,32,32">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MaxWidth="1000" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="What to copy" Style="{StaticResource SectionHeaderStyle}" />
+                            <c:SettingsCard Icon="&#xE8A5;" Header="File properties (/COPY)" IsContentBelow="True"
+                                            Description="Security, owner and auditing info need NTFS on both sides; owner and auditing usually need administrator rights.">
+                                <WrapPanel>
+                                    <CheckBox Style="{StaticResource FlagCheckBoxStyle}" Content="Data" IsChecked="{Binding Options.CopyFileData}" />
+                                    <CheckBox Style="{StaticResource FlagCheckBoxStyle}" Content="Attributes" IsChecked="{Binding Options.CopyFileAttributes}" />
+                                    <CheckBox Style="{StaticResource FlagCheckBoxStyle}" Content="Timestamps" IsChecked="{Binding Options.CopyFileTimestamps}" />
+                                    <CheckBox Style="{StaticResource FlagCheckBoxStyle}" Content="Security (ACLs)" IsChecked="{Binding Options.CopyFileSecurity}" />
+                                    <CheckBox Style="{StaticResource FlagCheckBoxStyle}" Content="Owner" IsChecked="{Binding Options.CopyFileOwner}" />
+                                    <CheckBox Style="{StaticResource FlagCheckBoxStyle}" Content="Auditing" IsChecked="{Binding Options.CopyFileAuditing}" />
+                                </WrapPanel>
+                            </c:SettingsCard>
+                            <c:SettingsCard Icon="&#xE8B7;" Header="Folder properties (/DCOPY)" IsContentBelow="True">
+                                <WrapPanel>
+                                    <CheckBox Style="{StaticResource FlagCheckBoxStyle}" Content="Data" IsChecked="{Binding Options.CopyDirData}" />
+                                    <CheckBox Style="{StaticResource FlagCheckBoxStyle}" Content="Attributes" IsChecked="{Binding Options.CopyDirAttributes}" />
+                                    <CheckBox Style="{StaticResource FlagCheckBoxStyle}" Content="Timestamps" IsChecked="{Binding Options.CopyDirTimestamps}" />
+                                </WrapPanel>
+                            </c:SettingsCard>
+
+                            <TextBlock Text="Performance" Style="{StaticResource SectionHeaderStyle}" />
+                            <c:SettingsCard Icon="&#xE945;" Header="Copy several files at once (/MT)"
+                                            Description="Much faster for many small files. Turn off for slow or fragile targets.">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.Multithreaded}" AutomationProperties.Name="Multithreaded" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Header="Number of threads" Description="1 to 128. Robocopy's default is 8."
+                                            IsEnabled="{Binding Options.Multithreaded}" Margin="40,0,0,4">
+                                <TextBox Style="{StaticResource NumberBoxStyle}" Text="{Binding Options.ThreadCount}" AutomationProperties.Name="Thread count" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Icon="&#xE72C;" Header="Restartable and backup mode"
+                                            Description="Restartable mode resumes interrupted large files. Backup mode can copy files you can't normally read (needs admin rights).">
+                                <ComboBox MinWidth="260" SelectedValuePath="Tag" SelectedValue="{Binding Options.RestartMode}" AutomationProperties.Name="Restart mode">
+                                    <ComboBoxItem Content="Off" Tag="{x:Static m:RestartMode.Off}" />
+                                    <ComboBoxItem Content="Restartable (/Z)" Tag="{x:Static m:RestartMode.Restartable}" />
+                                    <ComboBoxItem Content="Backup mode (/B)" Tag="{x:Static m:RestartMode.Backup}" />
+                                    <ComboBoxItem Content="Restartable, backup if denied (/ZB)" Tag="{x:Static m:RestartMode.RestartableWithBackupFallback}" />
+                                </ComboBox>
+                            </c:SettingsCard>
+                            <c:SettingsCard Icon="&#xE7B8;" Header="Unbuffered I/O (/J)" Description="Recommended for very large files.">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.Unbuffered}" AutomationProperties.Name="Unbuffered I/O" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Icon="&#xE968;" Header="Network compression (/COMPRESS)" Description="Ask SMB to compress transfers when the server supports it.">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.Compress}" AutomationProperties.Name="Network compression" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Icon="&#xEC48;" Header="Pause between packets (/IPG)"
+                                            Description="Frees up bandwidth on slow links. Leave empty for full speed. Not used together with multithreading.">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBox Style="{StaticResource NumberBoxStyle}" Text="{Binding Options.InterPacketGapMs, TargetNullValue=''}"
+                                             AutomationProperties.Name="Inter-packet gap in milliseconds" />
+                                    <TextBlock Text="ms" Style="{StaticResource InlineUnitStyle}" MinWidth="32" />
+                                </StackPanel>
+                            </c:SettingsCard>
+
+                            <TextBlock Text="Links and compatibility" Style="{StaticResource SectionHeaderStyle}" />
+                            <c:SettingsCard Icon="&#xE71B;" Header="Skip junction points (/XJ)"
+                                            Description="Recommended. Avoids loops such as the Application Data junction in user profiles.">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.ExcludeJunctions}" AutomationProperties.Name="Exclude junctions" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Icon="&#xE71B;" Header="Copy symbolic links as links (/SL)" Description="Instead of copying the files they point to.">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.CopySymlinksAsLinks}" AutomationProperties.Name="Copy symbolic links" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Icon="&#xE916;" Header="FAT file times (/FFT)"
+                                            Description="Use 2-second timestamp precision. Helps with FAT drives and many NAS devices that recopy everything.">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.FatFileTimes}" AutomationProperties.Name="FAT file times" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Icon="&#xE916;" Header="Compensate for daylight saving time (/DST)"
+                                            Description="Ignore one-hour time differences.">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.CompensateDst}" AutomationProperties.Name="Compensate DST" />
+                            </c:SettingsCard>
+                        </StackPanel>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ── Retry & logging ─────────────────────────────────────── -->
+            <TabItem Header="Retry &amp; logging">
+                <ScrollViewer Style="{StaticResource TabScrollStyle}">
+                    <Grid Margin="32,4,32,32">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MaxWidth="1000" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="When a file can't be copied" Style="{StaticResource SectionHeaderStyle}" />
+                            <c:SettingsCard Icon="&#xE72C;" Header="Retries (/R)" Description="How many times to try again before giving up on a file.">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBox Style="{StaticResource NumberBoxStyle}" Text="{Binding Options.Retries}" AutomationProperties.Name="Retries" />
+                                    <TextBlock Text="times" Style="{StaticResource InlineUnitStyle}" MinWidth="56" />
+                                </StackPanel>
+                            </c:SettingsCard>
+                            <c:SettingsCard Icon="&#xE916;" Header="Wait between retries (/W)">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBox Style="{StaticResource NumberBoxStyle}" Text="{Binding Options.WaitSeconds}" AutomationProperties.Name="Wait seconds" />
+                                    <TextBlock Text="seconds" Style="{StaticResource InlineUnitStyle}" MinWidth="56" />
+                                </StackPanel>
+                            </c:SettingsCard>
+
+                            <TextBlock Text="Log" Style="{StaticResource SectionHeaderStyle}" />
+                            <c:SettingsCard Icon="&#xE838;" Header="Log files"
+                                            Description="Every run writes a full robocopy log. Older logs are removed based on the history setting.">
+                                <Button Content="Open folder" Command="{Binding OpenLogsFolderCommand}" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Header="Include skipped files (/V)">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.Verbose}" AutomationProperties.Name="Verbose" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Header="Include file timestamps (/TS)">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.Timestamps}" AutomationProperties.Name="Timestamps" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Header="Show full paths (/FP)">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.FullPaths}" AutomationProperties.Name="Full paths" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Header="Show sizes in bytes (/BYTES)">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.Bytes}" AutomationProperties.Name="Bytes" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Header="Don't list files (/NFL)" Description="Keeps logs small. The live output will only show folders and errors.">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.NoFileList}" AutomationProperties.Name="No file list" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Header="Don't list folders (/NDL)">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.NoDirList}" AutomationProperties.Name="No folder list" />
+                            </c:SettingsCard>
+                            <c:SettingsCard Header="Don't show progress percentages (/NP)" Description="The progress bar will only count files.">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.NoProgress}" AutomationProperties.Name="No progress" />
+                            </c:SettingsCard>
+
+                            <TextBlock Text="Advanced" Style="{StaticResource SectionHeaderStyle}" />
+                            <c:SettingsCard Icon="&#xE756;" Header="Extra robocopy arguments" IsContentBelow="True"
+                                            Description="Added to the end of the command line as-is. Options that conflict with the settings above may override them.">
+                                <TextBox Style="{StaticResource MonoTextBoxStyle}" Text="{Binding Options.ExtraArguments, UpdateSourceTrigger=PropertyChanged}"
+                                         c:Placeholder.Text="/XA:SH /SJ" AutomationProperties.Name="Extra arguments" />
+                            </c:SettingsCard>
+                        </StackPanel>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ── Schedule ────────────────────────────────────────────── -->
+            <TabItem Header="Schedule">
+                <ScrollViewer Style="{StaticResource TabScrollStyle}">
+                    <Grid Margin="32,4,32,32">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MaxWidth="1000" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Schedule" Style="{StaticResource SectionHeaderStyle}" />
+                            <c:SettingsCard Icon="&#xE787;" Header="Run automatically" Description="{Binding ScheduleText}">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Schedule.Enabled}" AutomationProperties.Name="Run automatically" />
+                            </c:SettingsCard>
+
+                            <StackPanel IsEnabled="{Binding Schedule.Enabled}">
+                                <c:SettingsCard Header="Repeat" Margin="40,0,0,4">
+                                    <Border Style="{StaticResource SegmentedContainerStyle}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <RadioButton Style="{StaticResource SegmentedItemStyle}" GroupName="ScheduleKind" Content="Every…"
+                                                         IsChecked="{Binding Schedule.Kind, Converter={StaticResource EnumToBool}, ConverterParameter=Interval}" />
+                                            <RadioButton Style="{StaticResource SegmentedItemStyle}" GroupName="ScheduleKind" Content="Daily"
+                                                         IsChecked="{Binding Schedule.Kind, Converter={StaticResource EnumToBool}, ConverterParameter=Daily}" />
+                                            <RadioButton Style="{StaticResource SegmentedItemStyle}" GroupName="ScheduleKind" Content="Weekly"
+                                                         IsChecked="{Binding Schedule.Kind, Converter={StaticResource EnumToBool}, ConverterParameter=Weekly}" />
+                                            <RadioButton Style="{StaticResource SegmentedItemStyle}" GroupName="ScheduleKind" Content="At sign-in"
+                                                         IsChecked="{Binding Schedule.Kind, Converter={StaticResource EnumToBool}, ConverterParameter=AtLogon}" />
+                                        </StackPanel>
+                                    </Border>
+                                </c:SettingsCard>
+                                <c:SettingsCard Header="Every" Margin="40,0,0,4"
+                                                Visibility="{Binding Schedule.Kind, Converter={StaticResource EnumToVisibility}, ConverterParameter=Interval}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBox Style="{StaticResource NumberBoxStyle}" Width="72" Text="{Binding Schedule.IntervalValue}"
+                                                 AutomationProperties.Name="Interval" />
+                                        <ComboBox Margin="8,0,0,0" MinWidth="110" SelectedValuePath="Tag" SelectedValue="{Binding Schedule.IntervalUnit}"
+                                                  AutomationProperties.Name="Interval unit">
+                                            <ComboBoxItem Content="minutes" Tag="{x:Static m:IntervalUnit.Minutes}" />
+                                            <ComboBoxItem Content="hours" Tag="{x:Static m:IntervalUnit.Hours}" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                </c:SettingsCard>
+                                <c:SettingsCard Margin="40,0,0,4"
+                                                Visibility="{Binding Schedule.Kind, Converter={StaticResource EnumToVisibility}, ConverterParameter=Interval|Daily|Weekly}">
+                                    <c:SettingsCard.Style>
+                                        <Style TargetType="c:SettingsCard" BasedOn="{StaticResource {x:Type c:SettingsCard}}">
+                                            <Setter Property="Header" Value="Time" />
+                                            <Setter Property="Description" Value="24-hour time, e.g. 02:00 or 18:30." />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Schedule.Kind}" Value="Interval">
+                                                    <Setter Property="Header" Value="Starting at" />
+                                                    <Setter Property="Description" Value="Runs are counted from this time of day, e.g. 00:00 with every 6 hours runs at 00:00, 06:00, 12:00 and 18:00." />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </c:SettingsCard.Style>
+                                    <TextBox x:Name="TimeBox" Style="{StaticResource NumberBoxStyle}" HorizontalContentAlignment="Center"
+                                             Text="{Binding TimeOfDayText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Time of day"
+                                             LostKeyboardFocus="OnTimeBoxLostFocus" PreviewKeyDown="OnTimeBoxKeyDown" />
+                                </c:SettingsCard>
+                                <c:SettingsCard Header="On these days" Margin="40,0,0,4"
+                                                Visibility="{Binding Schedule.Kind, Converter={StaticResource EnumToVisibility}, ConverterParameter=Weekly}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ToggleButton Style="{StaticResource DayToggleStyle}" Content="Mon" IsChecked="{Binding Schedule.Monday}" />
+                                        <ToggleButton Style="{StaticResource DayToggleStyle}" Content="Tue" IsChecked="{Binding Schedule.Tuesday}" />
+                                        <ToggleButton Style="{StaticResource DayToggleStyle}" Content="Wed" IsChecked="{Binding Schedule.Wednesday}" />
+                                        <ToggleButton Style="{StaticResource DayToggleStyle}" Content="Thu" IsChecked="{Binding Schedule.Thursday}" />
+                                        <ToggleButton Style="{StaticResource DayToggleStyle}" Content="Fri" IsChecked="{Binding Schedule.Friday}" />
+                                        <ToggleButton Style="{StaticResource DayToggleStyle}" Content="Sat" IsChecked="{Binding Schedule.Saturday}" />
+                                        <ToggleButton Style="{StaticResource DayToggleStyle}" Content="Sun" IsChecked="{Binding Schedule.Sunday}" Margin="0" />
+                                    </StackPanel>
+                                </c:SettingsCard>
+                                <c:SettingsCard Icon="&#xE823;" Header="Next run" Description="{Binding NextRunText}" MinHeight="56" />
+
+                                <TextBlock Text="Run with" Style="{StaticResource SectionHeaderStyle}" />
+                                <UniformGrid Columns="2" Margin="0,0,-8,0">
+                                    <RadioButton Style="{StaticResource ChoiceCardStyle}" GroupName="Runner" Content="RoboXopy"
+                                                 c:Ui.Icon="&#xE7F4;"
+                                                 c:Ui.Description="Runs while RoboXopy is open or waiting in the notification area. Turn on Start with Windows in Settings to keep it running."
+                                                 IsChecked="{Binding Schedule.Runner, Converter={StaticResource EnumToBool}, ConverterParameter=App}" />
+                                    <RadioButton Style="{StaticResource ChoiceCardStyle}" GroupName="Runner" Content="Windows Task Scheduler"
+                                                 c:Ui.Icon="&#xE7C4;"
+                                                 c:Ui.Description="Runs even when RoboXopy isn't open, as long as you're signed in. Uses this app in the background."
+                                                 IsChecked="{Binding Schedule.Runner, Converter={StaticResource EnumToBool}, ConverterParameter=TaskScheduler}" />
+                                </UniformGrid>
+                            </StackPanel>
+
+                            <c:SettingsCard Icon="&#xE7C4;" Header="Scheduled task" Description="{Binding TaskStatusText}"
+                                            Visibility="{Binding IsTaskSchedulerRunner, Converter={StaticResource BoolToVisibility}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Updating…" VerticalAlignment="Center" Margin="0,0,12,0"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                               Visibility="{Binding IsSyncingTask, Converter={StaticResource BoolToVisibility}}" />
+                                    <Button Content="Register again" Command="{Binding ReRegisterTaskCommand}" />
+                                    <Button Margin="8,0,0,0" Command="{Binding OpenTaskSchedulerCommand}" ToolTip="Open Task Scheduler"
+                                            AutomationProperties.Name="Open Task Scheduler">
+                                        <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE8A7;" FontSize="14" />
+                                    </Button>
+                                </StackPanel>
+                            </c:SettingsCard>
+                        </StackPanel>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ── History ─────────────────────────────────────────────── -->
+            <TabItem Header="History">
+                <ScrollViewer Style="{StaticResource TabScrollStyle}">
+                    <Grid Margin="32,4,32,32">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MaxWidth="1000" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <Grid>
+                                <TextBlock Text="Recent runs" Style="{StaticResource SectionHeaderStyle}" />
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0,4">
+                                    <Button Style="{StaticResource SubtleButtonStyle}" Command="{Binding OpenLogsFolderCommand}" AutomationProperties.Name="Logs folder">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE838;" FontSize="14" Margin="0,0,8,0" />
+                                            <TextBlock Text="Logs folder" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource SubtleButtonStyle}" Margin="4,0,0,0" Command="{Binding ClearHistoryCommand}" AutomationProperties.Name="Clear history"
+                                            Visibility="{Binding History.Count, Converter={StaticResource CountToVisibility}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE74D;" FontSize="14" Margin="0,0,8,0" />
+                                            <TextBlock Text="Clear history" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Text="Loading…" Style="{StaticResource SecondaryTextStyle}" Margin="2,8,0,0"
+                                       Visibility="{Binding IsHistoryLoading, Converter={StaticResource BoolToVisibility}}" />
+                            <Border Padding="24,28">
+                                <Border.Style>
+                                    <Style TargetType="Border" BasedOn="{StaticResource CardStyle}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsHistoryLoading}" Value="False" />
+                                                    <Condition Binding="{Binding History.Count}" Value="0" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE81C;" FontSize="32" HorizontalAlignment="Center"
+                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                                    <TextBlock Text="No runs yet" HorizontalAlignment="Center" Margin="0,10,0,0" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <TextBlock Text="Run or preview this profile and the results will show up here." HorizontalAlignment="Center"
+                                               Style="{StaticResource SecondaryTextStyle}" Margin="0,2,0,0" />
+                                </StackPanel>
+                            </Border>
+
+                            <ItemsControl ItemsSource="{Binding History}" Focusable="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,4" Padding="16,10,8,10">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Style="{StaticResource OutcomeIconStyle}" FontSize="18" VerticalAlignment="Top" Margin="0,2,14,0" />
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Title}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                                    <TextBlock Text="{Binding SummaryText}" Style="{StaticResource SecondaryTextStyle}"
+                                                               Visibility="{Binding SummaryText, Converter={StaticResource NullToVisibility}}" />
+                                                    <TextBlock Text="{Binding Message}" Style="{StaticResource SecondaryTextStyle}"
+                                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                               Visibility="{Binding Message, Converter={StaticResource NullToVisibility}}" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="16,0,8,0">
+                                                    <TextBlock Text="{Binding WhenText}" ToolTip="{Binding WhenFull}" HorizontalAlignment="Right" />
+                                                    <TextBlock Text="{Binding DetailText}" Style="{StaticResource SecondaryTextStyle}" HorizontalAlignment="Right"
+                                                               TextWrapping="NoWrap" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center"
+                                                            Visibility="{Binding HasLog, Converter={StaticResource BoolToVisibility}}">
+                                                    <Button Style="{StaticResource IconButtonStyle}" Content="&#xE8A5;" Command="{Binding OpenLogCommand}"
+                                                            ToolTip="Open log" AutomationProperties.Name="Open log" />
+                                                    <Button Style="{StaticResource IconButtonStyle}" Content="&#xE838;" Command="{Binding ShowLogInFolderCommand}"
+                                                            ToolTip="Show log in folder" AutomationProperties.Name="Show log in folder" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <!-- ═══ Command line ═════════════════════════════════════════════ -->
+        <Border Grid.Row="3" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Padding="32,6,24,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE756;" FontSize="14" Margin="0,0,10,0"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding CommandLine}" FontFamily="{StaticResource MonoFont}" FontSize="12"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           ToolTip="{Binding CommandLine}" />
+                <Button Grid.Column="2" Style="{StaticResource SubtleButtonStyle}" Margin="12,0,0,0" Padding="8,4"
+                        Command="{Binding CopyCommandLineCommand}" ToolTip="Copy the robocopy command line" AutomationProperties.Name="Copy command line">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontSize="13" Margin="0,0,6,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource IconTextStyle}">
+                                    <Setter Property="Text" Value="&#xE8C8;" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CommandCopied}" Value="True">
+                                            <Setter Property="Text" Value="&#xE73E;" />
+                                            <Setter Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock FontSize="12">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="Copy" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CommandCopied}" Value="True">
+                                            <Setter Property="Text" Value="Copied" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- ═══ Output panel ═════════════════════════════════════════════ -->
+        <GridSplitter x:Name="OutputSplitter" Grid.Row="4" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                      ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" Background="Transparent" Focusable="False"
+                      Cursor="SizeNS" DragCompleted="OnSplitterDragCompleted"
+                      Visibility="{Binding HasSession, Converter={StaticResource BoolToVisibility}}" />
+
+        <Border x:Name="OutputPanel" Grid.Row="5" DataContext="{Binding Session}"
+                Background="{DynamicResource LayerOnMicaBaseAltFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Status line -->
+                <Grid Margin="32,8,12,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource OutcomeIconStyle}" Margin="0,0,10,0"
+                               Visibility="{Binding IsRunning, Converter={StaticResource InverseBoolToVisibility}}" />
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,16,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="{Binding ResultTitle}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                        <Setter Property="Text" Value="{Binding TitleText, StringFormat='{}{0}…'}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsCancelling}" Value="True">
+                                        <Setter Property="Text" Value="Stopping…" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Grid.Column="2" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                        <Run Text="{Binding FileCount, Mode=OneWay, StringFormat='{}{0:N0}'}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <Run Text="{Binding FilesLabel, Mode=OneWay, StringFormat='files {0}'}" />
+                        <Run Text="  ·  " />
+                        <Run Text="{Binding BytesText, Mode=OneWay}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <Run Text="  ·  " />
+                        <Run Text="{Binding ExtraCount, Mode=OneWay, StringFormat='{}{0:N0}'}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <Run Text="{Binding ExtrasLabel, Mode=OneWay}" />
+                        <Run Text="  ·  " />
+                        <Run Text="{Binding ErrorCount, Mode=OneWay, StringFormat='{}{0:N0}'}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <Run Text="errors" />
+                        <Run Text="  ·  " />
+                        <Run Text="{Binding ElapsedText, Mode=OneWay}" />
+                    </TextBlock>
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="12,0,0,0">
+                        <Button Content="Stop" Style="{StaticResource DangerButtonStyle}" Command="{Binding CancelCommand}" Padding="12,3,12,4"
+                                Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibility}}" />
+                        <Button Style="{StaticResource IconButtonStyle}" Content="&#xE711;" FontSize="12" Margin="4,0,0,0"
+                                Command="{Binding DataContext.CloseSessionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                Visibility="{Binding IsRunning, Converter={StaticResource InverseBoolToVisibility}}"
+                                ToolTip="Close output" AutomationProperties.Name="Close output" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- Progress -->
+                <Grid Grid.Row="1" Margin="32,0,24,6" Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibility}}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <ProgressBar x:Name="RunProgress" Minimum="0" Maximum="100" Value="{Binding FilePercent, Mode=OneWay, TargetNullValue=0}">
+                        <ProgressBar.Style>
+                            <Style TargetType="ProgressBar" BasedOn="{StaticResource {x:Type ProgressBar}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding FilePercent}" Value="{x:Null}">
+                                        <Setter Property="IsIndeterminate" Value="True" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ProgressBar.Style>
+                    </ProgressBar>
+                    <TextBlock Grid.Row="1" Text="{Binding CurrentItem}" FontFamily="{StaticResource MonoFont}" FontSize="12" Margin="0,4,0,0"
+                               TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Visibility="{Binding CurrentItem, Converter={StaticResource NullToVisibility}}" />
+                </Grid>
+
+                <!-- Result -->
+                <c:InfoBar Grid.Row="2" Margin="32,0,24,6" Title="{Binding ResultTitle}" Message="{Binding ResultMessage}">
+                    <c:InfoBar.Style>
+                        <Style TargetType="c:InfoBar" BasedOn="{StaticResource {x:Type c:InfoBar}}">
+                            <Setter Property="Severity" Value="Informational" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Outcome}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Outcome}" Value="Success">
+                                    <Setter Property="Severity" Value="Success" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Outcome}" Value="Warning">
+                                    <Setter Property="Severity" Value="Warning" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Outcome}" Value="Failed">
+                                    <Setter Property="Severity" Value="Error" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Outcome}" Value="Error">
+                                    <Setter Property="Severity" Value="Error" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </c:InfoBar.Style>
+                    <Button Content="Open log" Command="{Binding OpenLogCommand}"
+                            Visibility="{Binding LogFile, Converter={StaticResource NullToVisibility}}" />
+                </c:InfoBar>
+
+                <!-- Output lines -->
+                <ListBox Grid.Row="3" x:Name="OutputList" ItemsSource="{Binding Entries}" Style="{StaticResource BareListBoxStyle}"
+                         ItemContainerStyle="{StaticResource OutputListBoxItemStyle}" Padding="0,0,0,8"
+                         c:AutoScroll.IsEnabled="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                         ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         AutomationProperties.Name="Robocopy output">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VirtualizingStackPanel />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid TextElement.FontFamily="{StaticResource MonoFont}" TextElement.FontSize="12" Margin="16,0,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="112" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="StatusText" Text="{Binding Status}" TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <TextBlock x:Name="MainText" Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                <TextBlock x:Name="SizeText" Grid.Column="2" Text="{Binding SizeText}" Margin="12,0,0,0"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Kind}" Value="Text">
+                                    <Setter TargetName="StatusText" Property="Visibility" Value="Collapsed" />
+                                    <Setter TargetName="MainText" Property="Grid.Column" Value="0" />
+                                    <Setter TargetName="MainText" Property="Grid.ColumnSpan" Value="3" />
+                                    <Setter TargetName="MainText" Property="Text" Value="{Binding Text}" />
+                                    <Setter TargetName="MainText" Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Kind}" Value="Progress">
+                                    <Setter TargetName="StatusText" Property="Visibility" Value="Collapsed" />
+                                    <Setter TargetName="MainText" Property="Grid.Column" Value="0" />
+                                    <Setter TargetName="MainText" Property="Grid.ColumnSpan" Value="3" />
+                                    <Setter TargetName="MainText" Property="Text" Value="{Binding Text}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Kind}" Value="Error">
+                                    <Setter TargetName="StatusText" Property="Visibility" Value="Collapsed" />
+                                    <Setter TargetName="MainText" Property="Grid.Column" Value="0" />
+                                    <Setter TargetName="MainText" Property="Grid.ColumnSpan" Value="3" />
+                                    <Setter TargetName="MainText" Property="Text" Value="{Binding Text}" />
+                                    <Setter TargetName="MainText" Property="TextWrapping" Value="Wrap" />
+                                    <Setter TargetName="MainText" Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Kind}" Value="Directory">
+                                    <Setter TargetName="MainText" Property="FontWeight" Value="SemiBold" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsExtra}" Value="True">
+                                    <Setter TargetName="StatusText" Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
