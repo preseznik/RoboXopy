@@ -781,6 +781,16 @@
                             <Grid>
                                 <TextBlock Text="Recent runs" Style="{StaticResource SectionHeaderStyle}" />
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0,4">
+                                    <ComboBox ItemsSource="{x:Static vm:ProfileViewModel.HistoryRunKindFilters}"
+                                              DisplayMemberPath="Label"
+                                              SelectedItem="{Binding SelectedHistoryRunKindFilter}"
+                                              MinWidth="112" Margin="0,0,4,0"
+                                              AutomationProperties.Name="Filter history by run kind" />
+                                    <ComboBox ItemsSource="{x:Static vm:ProfileViewModel.HistoryErrorFilters}"
+                                              DisplayMemberPath="Label"
+                                              SelectedItem="{Binding SelectedHistoryErrorFilter}"
+                                              MinWidth="124" Margin="0,0,8,0"
+                                              AutomationProperties.Name="Filter history by error status" />
                                     <Button Style="{StaticResource SubtleButtonStyle}" Command="{Binding OpenLogsFolderCommand}" AutomationProperties.Name="Logs folder">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE838;" FontSize="14" Margin="0,0,8,0" />
@@ -823,7 +833,25 @@
                                 </StackPanel>
                             </Border>
 
-                            <ItemsControl ItemsSource="{Binding History}" Focusable="False">
+                            <TextBlock Text="No runs match the selected filters." Margin="2,8,0,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource SecondaryTextStyle}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsHistoryLoading}" Value="False" />
+                                                    <Condition Binding="{Binding HasHistory}" Value="True" />
+                                                    <Condition Binding="{Binding HasFilteredHistory}" Value="False" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+
+                            <ItemsControl ItemsSource="{Binding FilteredHistory}" Focusable="False">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border Margin="0,0,0,4" Padding="16,10,8,10" c:RevealBehavior.When="{Binding IsHighlighted}">

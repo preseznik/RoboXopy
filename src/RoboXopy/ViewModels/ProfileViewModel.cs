@@ -24,6 +24,23 @@ public enum ProfileStatus
     Failed,
 }
 
+public enum HistoryRunKindFilter
+{
+    All,
+    Previews,
+    ActualRuns,
+}
+
+public enum HistoryErrorFilter
+{
+    All,
+    WithErrors,
+    WithoutErrors,
+}
+
+public sealed record HistoryRunKindFilterOption(string Label, HistoryRunKindFilter Value);
+public sealed record HistoryErrorFilterOption(string Label, HistoryErrorFilter Value);
+
 /// <summary>Editor and runner for a single <see cref="SyncProfile"/>.</summary>
 public sealed partial class ProfileViewModel : ObservableObject
 {
@@ -89,6 +106,19 @@ public sealed partial class ProfileViewModel : ObservableObject
     public SizeLimitViewModel MaxFileSize { get; }
     public SizeLimitViewModel MinFileSize { get; }
     public ObservableCollection<HistoryItemViewModel> History { get; } = [];
+    public static IReadOnlyList<HistoryRunKindFilterOption> HistoryRunKindFilters { get; } =
+    [
+        new("All runs", HistoryRunKindFilter.All),
+        new("Previews", HistoryRunKindFilter.Previews),
+        new("Actual runs", HistoryRunKindFilter.ActualRuns),
+    ];
+    public static IReadOnlyList<HistoryErrorFilterOption> HistoryErrorFilters { get; } =
+    [
+        new("All results", HistoryErrorFilter.All),
+        new("With errors", HistoryErrorFilter.WithErrors),
+        new("Without errors", HistoryErrorFilter.WithoutErrors),
+    ];
+    public IReadOnlyList<HistoryItemViewModel> FilteredHistory { get; private set; } = [];
     public HistoryChartViewModel Chart { get; } = new();
 
     // ── Display ─────────────────────────────────────────────────────────
@@ -178,11 +208,20 @@ public sealed partial class ProfileViewModel : ObservableObject
 
     [ObservableProperty] private bool _commandCopied;
     [ObservableProperty] private bool _isHistoryLoading;
+    [ObservableProperty] private HistoryRunKindFilterOption _selectedHistoryRunKindFilter = HistoryRunKindFilters[0];
+    [ObservableProperty] private HistoryErrorFilterOption _selectedHistoryErrorFilter = HistoryErrorFilters[0];
 
     public bool HasSession => Session is not null;
     public bool IsBusy => IsRunning || IsRunningExternally;
     public bool HasLastRun => LastRun is not null;
     public bool HasLastLog => LastRun?.LogFile is { } f && File.Exists(f);
+    public bool HasHistory => History.Count > 0;
+    public bool HasFilteredHistory => FilteredHistory.Count > 0;
+    public bool HasHistoryFilters => SelectedHistoryRunKindFilter.Value != HistoryRunKindFilter.All
+        || SelectedHistoryErrorFilter.Value != HistoryErrorFilter.All;
+
+    partial void OnSelectedHistoryRunKindFilterChanged(HistoryRunKindFilterOption value) => RefreshFilteredHistory();
+    partial void OnSelectedHistoryErrorFilterChanged(HistoryErrorFilterOption value) => RefreshFilteredHistory();
 
     public ProfileStatus Status
     {
@@ -484,6 +523,7 @@ public sealed partial class ProfileViewModel : ObservableObject
             var records = await Task.Run(() => history.Load(id, HistoryChartViewModel.MaxRecords));
             History.Clear();
             foreach (var r in records.Take(HistoryListSize)) History.Add(new HistoryItemViewModel(r));
+            RefreshFilteredHistory();
             Chart.SetRecords(records);
             if (records.Count > 0 && !IsRunning) LastRun = records[0];
         }
@@ -501,6 +541,28 @@ public sealed partial class ProfileViewModel : ObservableObject
     {
         if (_historyLoaded) await EnsureHistoryAsync(reload: true);
         else await LoadLatestAsync();
+    }
+
+    private void RefreshFilteredHistory()
+    {
+        IEnumerable<HistoryItemViewModel> history = History;
+        history = SelectedHistoryRunKindFilter.Value switch
+        {
+            HistoryRunKindFilter.Previews => history.Where(run => run.DryRun),
+            HistoryRunKindFilter.ActualRuns => history.Where(run => !run.DryRun),
+            _ => history,
+        };
+        history = SelectedHistoryErrorFilter.Value switch
+        {
+            HistoryErrorFilter.WithErrors => history.Where(run => run.Outcome is RunOutcome.Error or RunOutcome.Failed),
+            HistoryErrorFilter.WithoutErrors => history.Where(run => run.Outcome is not (RunOutcome.Error or RunOutcome.Failed)),
+            _ => history,
+        };
+
+        FilteredHistory = history.ToList();
+        OnPropertyChanged(nameof(FilteredHistory));
+        OnPropertyChanged(nameof(HasHistory));
+        OnPropertyChanged(nameof(HasFilteredHistory));
     }
 
     public void RefreshExternalState()
@@ -609,6 +671,7 @@ public sealed partial class ProfileViewModel : ObservableObject
             {
                 History.Insert(0, new HistoryItemViewModel(record));
                 if (History.Count > HistoryListSize) History.RemoveAt(History.Count - 1);
+                RefreshFilteredHistory();
                 Chart.Add(record);
             }
         }
@@ -704,6 +767,7 @@ public sealed partial class ProfileViewModel : ObservableObject
         }
 
         History.Clear();
+        RefreshFilteredHistory();
         Chart.SetRecords([]);
         LastRun = null;
     }
