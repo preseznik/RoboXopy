@@ -1249,21 +1249,21 @@
                         <StackPanel>
                             <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                                 <Run>Showing</Run>
-                                <Run Text="{Binding FilteredEntriesDisplayCount, StringFormat=N0}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
+                                <Run Text="{Binding FilteredEntriesDisplayCount, StringFormat=N0, Mode=OneWay}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
                                 <Run>output rows totaling</Run>
-                                <Run Text="{Binding FilteredEntriesBytesText}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
+                                <Run Text="{Binding FilteredEntriesBytesText, Mode=OneWay}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
                                 <Run>.</Run>
                             </TextBlock>
                             <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                        Visibility="{Binding IsBreakdownFilterActive, Converter={StaticResource BoolToVisibility}}">
                                 <Run>The selected breakdown reports</Run>
-                                <Run Text="{Binding FilteredEntriesTotalCount, StringFormat=N0}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
+                                <Run Text="{Binding FilteredEntriesTotalCount, StringFormat=N0, Mode=OneWay}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
                                 <Run>files before type and name filters.</Run>
                             </TextBlock>
                             <TextBlock Margin="0,2,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                        Visibility="{Binding HasFilteredOutputLimitNotice, Converter={StaticResource BoolToVisibility}}">
                                 <Run>Only the most recent</Run>
-                                <Run Text="{Binding OutputRetentionLimitText}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
+                                <Run Text="{Binding OutputRetentionLimitText, Mode=OneWay}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
                                 <Run>output rows are retained.</Run>
                             </TextBlock>
                         </StackPanel>
