@@ -93,6 +93,15 @@ public class ScheduleTests
         s.Enabled = false;
         Assert.Equal("Manual", ScheduleDescriber.Describe(s, c));
     }
+
+    [Fact]
+    public void DescribesPreviewSchedule()
+    {
+        var schedule = Schedule(ScheduleKind.Daily);
+        schedule.PreviewOnly = true;
+
+        Assert.Equal("Preview daily at 02:00", ScheduleDescriber.Describe(schedule, CultureInfo.GetCultureInfo("en-GB")));
+    }
 }
 
 public class TaskSchedulerXmlTests
@@ -145,6 +154,16 @@ public class TaskSchedulerXmlTests
         var paths = new AppPaths(@"D:\Portable\RoboXopy Data\");
         var doc = XDocument.Parse(TaskSchedulerService.BuildTaskXml(p, @"C:\RoboXopy.exe", @"PC\user", paths.LaunchArguments));
         Assert.Equal($"--run {p.Id} --trigger task --data-dir \"D:\\Portable\\RoboXopy Data\"", doc.Descendants(Ns + "Arguments").Single().Value);
+    }
+
+    [Fact]
+    public void PreviewTask_UsesDryRun()
+    {
+        var p = Profile(ScheduleKind.Daily);
+        p.Schedule.PreviewOnly = true;
+
+        var doc = XDocument.Parse(TaskSchedulerService.BuildTaskXml(p, @"C:\RoboXopy.exe", @"PC\user"));
+        Assert.Equal($"--run {p.Id} --trigger task --dry-run", doc.Descendants(Ns + "Arguments").Single().Value);
     }
 
     [Fact]

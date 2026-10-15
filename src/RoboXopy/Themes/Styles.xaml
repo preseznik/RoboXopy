@@ -749,6 +749,25 @@
             <DataTrigger Binding="{Binding Status}" Value="Running">
                 <Setter Property="Fill" Value="{DynamicResource AccentFillColorDefaultBrush}" />
             </DataTrigger>
+            <DataTrigger Binding="{Binding Status}" Value="Stale">
+                <Setter Property="Fill" Value="{DynamicResource SystemFillColorCautionBrush}" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding IsCriticalStale}" Value="True">
+                <Setter Property="Fill" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- The timer ring fills clockwise from the stale threshold toward overdue. -->
+    <Style x:Key="StaleTimerStyle" TargetType="c:StaleTimer">
+        <Setter Property="Width" Value="15" />
+        <Setter Property="Height" Value="15" />
+        <Setter Property="IndicatorBrush" Value="{DynamicResource SystemFillColorCautionBrush}" />
+        <Setter Property="TrackBrush" Value="{DynamicResource ControlStrongFillColorDisabledBrush}" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsCriticalStale}" Value="True">
+                <Setter Property="IndicatorBrush" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+            </DataTrigger>
         </Style.Triggers>
     </Style>
 

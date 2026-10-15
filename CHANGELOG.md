@@ -4,6 +4,13 @@ All notable changes to RoboXopy are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-15
+
+### Added
+
+- **Stale sync status.** Profiles show an amber, progressively filling timer ring after 24 hours without a successful sync and turn red after 7 days. Interval schedules use their cadence instead: amber after one missed interval and red after three. A profile header also displays a **STALE** badge with the reason.
+- **Scheduled previews.** A schedule can now run as a dry-run instead of copying. When a scheduled preview finds pending copies, removals, mismatches, or failed files, the profile is marked stale until it is successfully synced.
+
 ## [1.3.0] - 2026-10-15
 
 ### Added

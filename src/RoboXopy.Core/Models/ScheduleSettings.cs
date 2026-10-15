@@ -6,6 +6,8 @@ namespace RoboXopy.Core.Models;
 public sealed partial class ScheduleSettings : ObservableObject
 {
     [ObservableProperty] private bool _enabled;
+    /// <summary>Runs the scheduled operation as a dry-run and uses its result to report pending changes.</summary>
+    [ObservableProperty] private bool _previewOnly;
     [ObservableProperty] private ScheduleKind _kind = ScheduleKind.Daily;
     [ObservableProperty] private ScheduleRunner _runner = ScheduleRunner.App;
 
@@ -48,6 +50,6 @@ public sealed partial class ScheduleSettings : ObservableObject
 
     /// <summary>A stable fingerprint of everything that affects a Task Scheduler registration.</summary>
     public string Fingerprint() =>
-        string.Join('|', Enabled, Kind, Runner, IntervalValue, IntervalUnit, TimeOfDay, StartDate.Date.ToString("yyyy-MM-dd"),
+        string.Join('|', Enabled, PreviewOnly, Kind, Runner, IntervalValue, IntervalUnit, TimeOfDay, StartDate.Date.ToString("yyyy-MM-dd"),
             Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday);
 }

@@ -34,7 +34,7 @@ public sealed class AppScheduler : IDisposable
             var s = p.Schedule;
             if (s.Enabled && s.Runner == ScheduleRunner.App && s.Kind == ScheduleKind.AtLogon && !p.IsRunning)
             {
-                _ = p.StartAsync(dryRun: false, RunTrigger.Scheduled);
+                _ = p.StartAsync(dryRun: s.PreviewOnly, RunTrigger.Scheduled);
             }
         }
     }
@@ -60,7 +60,7 @@ public sealed class AppScheduler : IDisposable
             if (!s.Enabled || s.Runner != ScheduleRunner.App || s.Kind == ScheduleKind.AtLogon || p.IsRunning) continue;
             if (ScheduleCalculator.IsDue(s, from, now))
             {
-                _ = p.StartAsync(dryRun: false, RunTrigger.Scheduled);
+                _ = p.StartAsync(dryRun: s.PreviewOnly, RunTrigger.Scheduled);
             }
         }
     }

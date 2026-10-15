@@ -22,6 +22,7 @@ public enum ProfileStatus
     Success,
     Warning,
     Failed,
+    Stale,
 }
 
 public enum HistoryRunKindFilter
@@ -52,7 +53,9 @@ public sealed partial class ProfileViewModel : ObservableObject
     private readonly DispatcherTimer _validateTimer;
     private readonly DispatcherTimer _copiedTimer;
     private readonly DispatcherTimer _highlightTimer;
+    private readonly DispatcherTimer _freshnessTimer;
     private readonly SemaphoreSlim _taskLock = new(1, 1);
+    private IReadOnlyList<RunRecord> _statusRecords = [];
     private HistoryItemViewModel? _highlighted;
     private int _validationVersion;
     private bool _taskSyncPending;
@@ -87,6 +90,8 @@ public sealed partial class ProfileViewModel : ObservableObject
             if (_highlighted is not null) _highlighted.IsHighlighted = false;
             _highlighted = null;
         };
+        _freshnessTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
+        _freshnessTimer.Tick += (_, _) => RefreshStaleStatus();
 
         MaxFileSize = new SizeLimitViewModel(() => Options.MaxFileSizeBytes, v => Options.MaxFileSizeBytes = v);
         MinFileSize = new SizeLimitViewModel(() => Options.MinFileSizeBytes, v => Options.MinFileSizeBytes = v);
@@ -95,6 +100,8 @@ public sealed partial class ProfileViewModel : ObservableObject
         _timeOfDayText = FormatTime(Schedule.TimeOfDay);
         RefreshNextRun();
         UpdateTaskStatus();
+        RefreshStaleStatus();
+        _freshnessTimer.Start();
     }
 
     public SyncProfile Model { get; }
@@ -203,6 +210,10 @@ public sealed partial class ProfileViewModel : ObservableObject
     private RunRecord? _lastRun;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Status), nameof(IsStale), nameof(IsCriticalStale), nameof(StaleProgress), nameof(StaleStatusText), nameof(StaleToolTip))]
+    private StaleSyncStatus _staleSyncStatus = StaleSyncStatus.Fresh;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(NextRunText))]
     private DateTime? _nextRun;
 
@@ -219,6 +230,11 @@ public sealed partial class ProfileViewModel : ObservableObject
     public bool HasFilteredHistory => FilteredHistory.Count > 0;
     public bool HasHistoryFilters => SelectedHistoryRunKindFilter.Value != HistoryRunKindFilter.All
         || SelectedHistoryErrorFilter.Value != HistoryErrorFilter.All;
+    public bool IsStale => StaleSyncStatus.IsStale;
+    public bool IsCriticalStale => StaleSyncStatus.IsOverdue;
+    public double StaleProgress => StaleSyncStatus.Progress;
+    public string StaleStatusText => StaleSyncStatus.Message;
+    public string StaleToolTip => StaleSyncStatus.ToolTip;
 
     partial void OnSelectedHistoryRunKindFilterChanged(HistoryRunKindFilterOption value) => RefreshFilteredHistory();
     partial void OnSelectedHistoryErrorFilterChanged(HistoryErrorFilterOption value) => RefreshFilteredHistory();
@@ -228,6 +244,8 @@ public sealed partial class ProfileViewModel : ObservableObject
         get
         {
             if (IsBusy) return ProfileStatus.Running;
+            if (LastRun?.Outcome is RunOutcome.Failed or RunOutcome.Error) return ProfileStatus.Failed;
+            if (IsStale) return ProfileStatus.Stale;
             return LastRun?.Outcome switch
             {
                 RunOutcome.Success => ProfileStatus.Success,
@@ -343,6 +361,7 @@ public sealed partial class ProfileViewModel : ObservableObject
             OnPropertyChanged(nameof(IsTaskSchedulerRunner));
             if (property == "Schedule.TimeOfDay" && !TryParseTime(TimeOfDayText, out _)) TimeOfDayText = FormatTime(Schedule.TimeOfDay);
             RefreshNextRun();
+            RefreshStaleStatus();
         }
 
         if (property.StartsWith("Schedule.", StringComparison.Ordinal) || property == nameof(SyncProfile.Name))
@@ -408,6 +427,7 @@ public sealed partial class ProfileViewModel : ObservableObject
         _deleted = true;
         _saveTimer.Stop();
         _validateTimer.Stop();
+        _freshnessTimer.Stop();
         Model.Changed -= OnModelChanged;
     }
 
@@ -498,6 +518,9 @@ public sealed partial class ProfileViewModel : ObservableObject
         OnPropertyChanged(nameof(NextRunText));
     }
 
+    private void RefreshStaleStatus() =>
+        StaleSyncStatus = StaleSyncEvaluator.Evaluate(Model, _statusRecords, DateTimeOffset.Now);
+
     // ── History ─────────────────────────────────────────────────────────
     public async Task LoadLatestAsync()
     {
@@ -505,7 +528,10 @@ public sealed partial class ProfileViewModel : ObservableObject
         var id = Model.Id;
         try
         {
-            LastRun = await Task.Run(() => history.LoadLatest(id));
+            var records = await Task.Run(() => history.Load(id, HistoryStore.MaxRecordsPerProfile));
+            _statusRecords = records;
+            LastRun = records.FirstOrDefault();
+            RefreshStaleStatus();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -522,11 +548,13 @@ public sealed partial class ProfileViewModel : ObservableObject
         try
         {
             var records = await Task.Run(() => history.Load(id, HistoryChartViewModel.MaxRecords));
+            _statusRecords = records;
             History.Clear();
             foreach (var r in records.Take(HistoryListSize)) History.Add(new HistoryItemViewModel(r));
             RefreshFilteredHistory();
             Chart.SetRecords(records);
             if (records.Count > 0 && !IsRunning) LastRun = records[0];
+            RefreshStaleStatus();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -683,6 +711,8 @@ public sealed partial class ProfileViewModel : ObservableObject
         if (persisted)
         {
             LastRun = record;
+            _statusRecords = [record, .. _statusRecords.Where(existing => existing.Id != record.Id).Take(HistoryStore.MaxRecordsPerProfile - 1)];
+            RefreshStaleStatus();
             if (_historyLoaded)
             {
                 History.Insert(0, new HistoryItemViewModel(record));
@@ -787,9 +817,11 @@ public sealed partial class ProfileViewModel : ObservableObject
         }
 
         History.Clear();
+        _statusRecords = [];
         RefreshFilteredHistory();
         Chart.SetRecords([]);
         LastRun = null;
+        RefreshStaleStatus();
     }
 
     /// <summary>Scrolls to a run picked on the activity chart and highlights it briefly.</summary>

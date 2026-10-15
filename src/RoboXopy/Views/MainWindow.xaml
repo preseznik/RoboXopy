@@ -189,7 +189,12 @@
                                 <TextBlock Text="{Binding Subtitle}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,1,0,0" />
                             </StackPanel>
-                            <Ellipse Grid.Column="1" Style="{StaticResource StatusDotStyle}" Margin="10,0,2,0" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,2,0">
+                                <c:StaleTimer Style="{StaticResource StaleTimerStyle}" Progress="{Binding StaleProgress}"
+                                              ToolTip="{Binding StaleToolTip}" Margin="0,0,6,0"
+                                              Visibility="{Binding IsStale, Converter={StaticResource BoolToVisibility}}" />
+                                <Ellipse Style="{StaticResource StatusDotStyle}" />
+                            </StackPanel>
                         </Grid>
                     </DataTemplate>
                 </ListBox.ItemTemplate>

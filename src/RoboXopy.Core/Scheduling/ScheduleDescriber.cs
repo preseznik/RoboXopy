@@ -12,7 +12,7 @@ public static class ScheduleDescriber
         if (!schedule.Enabled) return "Manual";
 
         var time = FormatTime(schedule.TimeOfDay, culture);
-        return schedule.Kind switch
+        var description = schedule.Kind switch
         {
             ScheduleKind.Interval => DescribeInterval(schedule),
             ScheduleKind.Daily => $"Daily at {time}",
@@ -20,6 +20,7 @@ public static class ScheduleDescriber
             ScheduleKind.AtLogon => "At sign-in",
             _ => "Scheduled",
         };
+        return schedule.PreviewOnly ? "Preview " + description.ToLowerInvariant() : description;
     }
 
     public static string DescribeMode(CopyMode mode) => mode switch

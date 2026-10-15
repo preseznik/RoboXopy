@@ -92,7 +92,27 @@
                          c:TextBoxBehavior.CommitOnEnter="True" />
                 <StackPanel Orientation="Horizontal" Margin="11,4,0,0">
                     <Ellipse Style="{StaticResource StatusDotStyle}" VerticalAlignment="Center" Margin="0,1,8,0" />
+                    <Border Padding="6,2,7,2" CornerRadius="3" Margin="0,0,8,0" ToolTip="{Binding StaleToolTip}"
+                            Visibility="{Binding IsStale, Converter={StaticResource BoolToVisibility}}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="{DynamicResource SystemFillColorCautionBackgroundBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCriticalStale}" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource SystemFillColorCriticalBackgroundBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <c:StaleTimer Style="{StaticResource StaleTimerStyle}" Progress="{Binding StaleProgress}" Margin="0,0,5,0" />
+                            <TextBlock Text="STALE" FontSize="11" FontWeight="SemiBold" />
+                        </StackPanel>
+                    </Border>
                     <TextBlock Text="{Binding LastRunText}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Text="{Binding StaleStatusText}" Margin="8,0,0,0"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Visibility="{Binding IsStale, Converter={StaticResource BoolToVisibility}}" />
                     <TextBlock Text="  ·  " Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                     <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE787;" FontSize="12" Margin="0,1,6,0"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
@@ -647,6 +667,11 @@
                                     </StackPanel>
                                 </c:SettingsCard>
                                 <c:SettingsCard Icon="&#xE823;" Header="Next run" Description="{Binding NextRunText}" MinHeight="56" />
+                                <c:SettingsCard Icon="&#xE890;" Header="Run a preview instead"
+                                                Description="Checks what would change without copying. If changes are found, the profile is marked stale.">
+                                    <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Schedule.PreviewOnly}"
+                                              AutomationProperties.Name="Schedule preview only" />
+                                </c:SettingsCard>
 
                                 <TextBlock Text="Run with" Style="{StaticResource SectionHeaderStyle}" />
                                 <UniformGrid Columns="2" Margin="0,0,-8,0">

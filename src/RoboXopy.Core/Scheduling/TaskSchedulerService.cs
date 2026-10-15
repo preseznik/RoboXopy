@@ -99,7 +99,7 @@ public sealed class TaskSchedulerService(string launchArguments = "")
                 new XElement(Ns + "Actions", new XAttribute("Context", "Author"),
                     new XElement(Ns + "Exec",
                         new XElement(Ns + "Command", exePath),
-                        new XElement(Ns + "Arguments", $"--run {profile.Id} --trigger task{launchArguments}"),
+                        new XElement(Ns + "Arguments", $"--run {profile.Id} --trigger task{(s.PreviewOnly ? " --dry-run" : "")}{launchArguments}"),
                         new XElement(Ns + "WorkingDirectory", Path.GetDirectoryName(exePath) ?? "")))));
 
         var sb = new StringBuilder();
