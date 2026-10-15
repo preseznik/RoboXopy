@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using RoboXopy.Infrastructure;
 
@@ -27,6 +28,7 @@ public sealed record BreakdownSegment(BreakdownKind Kind, long Count, long Bytes
 /// <summary>
 /// A single stacked bar of a run's files, sized by count. Every non-empty segment stays visible,
 /// however small, so a handful of removals next to a million unchanged files still shows up.
+/// Segments are clickable to filter the output list by category.
 /// </summary>
 public sealed class BreakdownBar : FrameworkElement
 {
@@ -38,6 +40,13 @@ public sealed class BreakdownBar : FrameworkElement
         nameof(Segments), typeof(IReadOnlyList<BreakdownSegment>), typeof(BreakdownBar),
         new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
 
+    public static readonly DependencyProperty SelectedKindProperty = DependencyProperty.Register(
+        nameof(SelectedKind), typeof(BreakdownKind?), typeof(BreakdownBar),
+        new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+    public static readonly DependencyProperty SegmentClickedCommandProperty = DependencyProperty.Register(
+        nameof(SegmentClickedCommand), typeof(ICommand), typeof(BreakdownBar));
+
     public static readonly DependencyProperty UnchangedBrushProperty = RegisterBrush(nameof(UnchangedBrush));
     public static readonly DependencyProperty CopiedBrushProperty = RegisterBrush(nameof(CopiedBrush));
     public static readonly DependencyProperty RemovedBrushProperty = RegisterBrush(nameof(RemovedBrush));
@@ -45,10 +54,24 @@ public sealed class BreakdownBar : FrameworkElement
     public static readonly DependencyProperty MismatchBrushProperty = RegisterBrush(nameof(MismatchBrush));
     public static readonly DependencyProperty FailedBrushProperty = RegisterBrush(nameof(FailedBrush));
 
+    private List<(double Left, double Right, BreakdownKind Kind)>? _segmentRanges;
+
     public IReadOnlyList<BreakdownSegment>? Segments
     {
         get => (IReadOnlyList<BreakdownSegment>?)GetValue(SegmentsProperty);
         set => SetValue(SegmentsProperty, value);
+    }
+
+    public BreakdownKind? SelectedKind
+    {
+        get => (BreakdownKind?)GetValue(SelectedKindProperty);
+        set => SetValue(SelectedKindProperty, value);
+    }
+
+    public ICommand? SegmentClickedCommand
+    {
+        get => (ICommand?)GetValue(SegmentClickedCommandProperty);
+        set => SetValue(SegmentClickedCommandProperty, value);
     }
 
     public Brush? UnchangedBrush { get => (Brush?)GetValue(UnchangedBrushProperty); set => SetValue(UnchangedBrushProperty, value); }
@@ -57,6 +80,12 @@ public sealed class BreakdownBar : FrameworkElement
     public Brush? KeptBrush { get => (Brush?)GetValue(KeptBrushProperty); set => SetValue(KeptBrushProperty, value); }
     public Brush? MismatchBrush { get => (Brush?)GetValue(MismatchBrushProperty); set => SetValue(MismatchBrushProperty, value); }
     public Brush? FailedBrush { get => (Brush?)GetValue(FailedBrushProperty); set => SetValue(FailedBrushProperty, value); }
+
+    public BreakdownBar()
+    {
+        Cursor = Cursors.Hand;
+        MouseDown += OnMouseDown;
+    }
 
     protected override Size MeasureOverride(Size availableSize) =>
         new(double.IsInfinity(availableSize.Width) ? 0 : availableSize.Width, BarHeight);
@@ -71,15 +100,47 @@ public sealed class BreakdownBar : FrameworkElement
         var widths = Layout(segments.Select(s => (double)s.Count).ToList(), width - Gap * (segments.Count - 1), MinSegmentWidth);
         dc.PushClip(new RectangleGeometry(new Rect(0, 0, width, height), height / 2, height / 2));
         var x = 0.0;
+        _segmentRanges = new();
         for (var i = 0; i < segments.Count; i++)
         {
             // The last segment absorbs rounding so the bar always ends flush.
             var right = i == segments.Count - 1 ? width : Math.Round(x + widths[i]);
-            if (right > x) dc.DrawRectangle(BrushFor(segments[i].Kind), null, new Rect(x, 0, right - x, height));
+            if (right > x)
+            {
+                var kind = segments[i].Kind;
+                var brush = BrushFor(kind);
+                
+                // Apply selection highlighting: slightly brighter or darker
+                if (SelectedKind == kind && brush is SolidColorBrush scb)
+                {
+                    var c = scb.Color;
+                    var brightenedColor = Color.FromArgb(
+                        c.A,
+                        (byte)Math.Min(255, c.R + 40),
+                        (byte)Math.Min(255, c.G + 40),
+                        (byte)Math.Min(255, c.B + 40)
+                    );
+                    brush = new SolidColorBrush(brightenedColor);
+                }
+                
+                dc.DrawRectangle(brush, null, new Rect(x, 0, right - x, height));
+                _segmentRanges.Add((x, right, kind));
+            }
             x = right + Gap;
         }
 
         dc.Pop();
+    }
+
+    private void OnMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (_segmentRanges is null) return;
+        var clickX = e.GetPosition(this).X;
+        var clicked = _segmentRanges.FirstOrDefault(sr => sr.Left <= clickX && clickX < sr.Right);
+        if (clicked != default && SegmentClickedCommand?.CanExecute(clicked.Kind) == true)
+        {
+            SegmentClickedCommand.Execute(clicked.Kind);
+        }
     }
 
     /// <summary>Splits <paramref name="width"/> in proportion to <paramref name="values"/>, giving each at least <paramref name="min"/>.</summary>

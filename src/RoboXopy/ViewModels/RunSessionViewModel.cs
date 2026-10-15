@@ -92,6 +92,11 @@ public sealed partial class RunSessionViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(HasBreakdown))]
     private IReadOnlyList<BreakdownSegment>? _breakdown;
 
+    /// <summary>The breakdown category currently selected for filtering the file list, or null to show all entries.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FilteredEntries))]
+    private BreakdownKind? _selectedBreakdownKind;
+
     /// <summary>Unusual things about the run compared with the profile's history, one per line.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasFindings))]
@@ -103,6 +108,24 @@ public sealed partial class RunSessionViewModel : ObservableObject
 
     public bool HasBreakdown => Breakdown is { Count: > 0 };
     public bool HasFindings => !string.IsNullOrEmpty(FindingsText);
+
+    /// <summary>Returns entries filtered by the selected breakdown kind, or all entries if no kind is selected.</summary>
+    public IReadOnlyList<OutputEntry> FilteredEntries
+    {
+        get
+        {
+            if (SelectedBreakdownKind is not { } kind) return Entries;
+            return Entries.Where(e => EntryMatchesKind(e, kind)).ToList();
+        }
+    }
+
+    private static bool EntryMatchesKind(OutputEntry entry, BreakdownKind kind) => kind switch
+    {
+        BreakdownKind.Unchanged => entry.Kind == OutputLineKind.File && IsUnchanged(entry.Status),
+        BreakdownKind.Copied => entry.Kind == OutputLineKind.File && !entry.IsExtra && !IsUnchanged(entry.Status),
+        BreakdownKind.Removed => entry.Kind == OutputLineKind.File && entry.IsExtra,
+        _ => false,
+    };
 
     public string BytesText => RunFormatting.FormatBytes(ByteCount);
     public string FilesLabel => DryRun ? "to copy" : "copied";
@@ -187,6 +210,13 @@ public sealed partial class RunSessionViewModel : ObservableObject
         if (!IsRunning || IsCancelling) return;
         IsCancelling = true;
         Cancellation.Cancel();
+    }
+
+    [RelayCommand]
+    private void ToggleBreakdownFilter(BreakdownKind kind)
+    {
+        // Clicking the same category again toggles it off; clicking a different one selects it.
+        SelectedBreakdownKind = SelectedBreakdownKind == kind ? null : kind;
     }
 
     [RelayCommand]

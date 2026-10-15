@@ -1056,7 +1056,8 @@
 
                 <!-- Breakdown: what happened (or would happen) to the files -->
                 <StackPanel Grid.Row="2" Margin="32,4,24,10" Visibility="{Binding HasBreakdown, Converter={StaticResource BoolToVisibility}}">
-                    <c:BreakdownBar Segments="{Binding Breakdown}" />
+                    <c:BreakdownBar Segments="{Binding Breakdown}" SelectedKind="{Binding SelectedBreakdownKind}"
+                                    SegmentClickedCommand="{Binding ToggleBreakdownFilterCommand}" />
                     <ItemsControl ItemsSource="{Binding Breakdown}" Margin="0,8,0,0" Focusable="False" IsTabStop="False">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -1125,7 +1126,7 @@
                 </c:InfoBar>
 
                 <!-- Output lines -->
-                <ListBox Grid.Row="5" x:Name="OutputList" ItemsSource="{Binding Entries}" Style="{StaticResource BareListBoxStyle}"
+                <ListBox Grid.Row="5" x:Name="OutputList" ItemsSource="{Binding FilteredEntries}" Style="{StaticResource BareListBoxStyle}"
                          ItemContainerStyle="{StaticResource OutputListBoxItemStyle}" Padding="0,0,0,8"
                          c:AutoScroll.IsEnabled="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                          ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto"
