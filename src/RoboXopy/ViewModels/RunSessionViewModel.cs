@@ -95,8 +95,6 @@ public sealed partial class RunSessionViewModel : ObservableObject
     /// <summary>The breakdown category currently selected for filtering the file list, or null to show all entries.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FilteredEntries))]
-    [NotifyPropertyChangedFor(nameof(FilteredEntriesTotal))]
-    [NotifyPropertyChangedFor(nameof(FilteredEntriesExceedDisplay))]
     private BreakdownKind? _selectedBreakdownKind;
 
     /// <summary>Unusual things about the run compared with the profile's history, one per line.</summary>
@@ -107,39 +105,45 @@ public sealed partial class RunSessionViewModel : ObservableObject
     [ObservableProperty] private bool _hasWarningFindings;
     [ObservableProperty] private bool _isResultRedundant;
     [ObservableProperty] private string _findingsTitle = "";
+    
+    [ObservableProperty] private long _filteredEntriesDisplayCount;
+    [ObservableProperty] private long _filteredEntriesTotalCount;
 
     public bool HasBreakdown => Breakdown is { Count: > 0 };
     public bool HasFindings => !string.IsNullOrEmpty(FindingsText);
+    public bool FilteredEntriesExceedDisplay => SelectedBreakdownKind is not null && FilteredEntriesTotalCount > FilteredEntriesDisplayCount;
 
     /// <summary>Returns entries filtered by the selected breakdown kind, or all entries if no kind is selected.</summary>
     public IReadOnlyList<OutputEntry> FilteredEntries
     {
         get
         {
-            if (SelectedBreakdownKind is not { } kind) return Entries;
-            return Entries.Where(e => EntryMatchesKind(e, kind)).ToList();
+            if (SelectedBreakdownKind is not { } kind)
+            {
+                UpdateFilteredEntriesCounts();
+                return Entries;
+            }
+            var filtered = Entries.Where(e => EntryMatchesKind(e, kind)).ToList();
+            UpdateFilteredEntriesCounts(filtered);
+            return filtered;
         }
     }
 
-    /// <summary>Total count of entries matching the selected breakdown kind (including those not displayed due to MaxEntries limit).</summary>
-    public long FilteredEntriesTotal
+    private void UpdateFilteredEntriesCounts(IReadOnlyList<OutputEntry>? filtered = null)
     {
-        get
+        if (SelectedBreakdownKind is not { } kind)
         {
-            if (SelectedBreakdownKind is not { } kind) return Entries.Count;
-            var segment = Breakdown?.FirstOrDefault(s => s.Kind == kind);
-            return segment?.Count ?? 0;
+            FilteredEntriesDisplayCount = Entries.Count;
+            FilteredEntriesTotalCount = Entries.Count;
+            return;
         }
-    }
-
-    /// <summary>True if filtering is active and there are more results than displayed.</summary>
-    public bool FilteredEntriesExceedDisplay
-    {
-        get
-        {
-            if (SelectedBreakdownKind is null) return false;
-            return FilteredEntriesTotal > FilteredEntries.Count;
-        }
+        
+        var displayed = filtered?.Count ?? 0;
+        var segment = Breakdown?.FirstOrDefault(s => s.Kind == kind);
+        var total = segment?.Count ?? 0;
+        
+        FilteredEntriesDisplayCount = displayed;
+        FilteredEntriesTotalCount = total;
     }
 
     private static bool EntryMatchesKind(OutputEntry entry, BreakdownKind kind) => kind switch

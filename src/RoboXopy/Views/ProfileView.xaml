@@ -1194,9 +1194,9 @@
                         Visibility="{Binding FilteredEntriesExceedDisplay, Converter={StaticResource BoolToVisibility}}">
                     <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                         <Run>Showing</Run>
-                        <Run Text="{Binding FilteredEntries.Count, StringFormat=N0}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
+                        <Run Text="{Binding FilteredEntriesDisplayCount, StringFormat=N0}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
                         <Run>of</Run>
-                        <Run Text="{Binding FilteredEntriesTotal, StringFormat=N0}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
+                        <Run Text="{Binding FilteredEntriesTotalCount, StringFormat=N0}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
                         <Run>matching files. Output is limited to 5,000 entries.</Run>
                     </TextBlock>
                 </Border>
