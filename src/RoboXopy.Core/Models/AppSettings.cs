@@ -11,6 +11,8 @@ public sealed partial class AppSettings : ObservableObject
     [ObservableProperty] private bool _showNotifications = true;
     [ObservableProperty] private bool _notifyOnlyOnProblems;
     [ObservableProperty] private bool _schedulerPaused;
+    [ObservableProperty] private bool _simultaneousScheduledRuns;
+    [ObservableProperty] private int _maxSimultaneousScheduledRuns = 2;
     [ObservableProperty] private int _logRetentionCount = 30;
     [ObservableProperty] private string _robocopyPath = "";
     [ObservableProperty] private bool _checkForUpdates = true;
@@ -29,6 +31,12 @@ public sealed partial class AppSettings : ObservableObject
     [ObservableProperty] private bool _skipProfileWizard;
     /// <summary>Folders that have ever been used as a source, retained after profiles are changed or deleted.</summary>
     [ObservableProperty] private IReadOnlyList<string> _sourceFolderHistory = [];
+
+    partial void OnMaxSimultaneousScheduledRunsChanged(int value)
+    {
+        var clamped = Math.Clamp(value, 1, 3);
+        if (value != clamped) MaxSimultaneousScheduledRuns = clamped;
+    }
 
     public string ResolveRobocopyPath() =>
         string.IsNullOrWhiteSpace(RobocopyPath)

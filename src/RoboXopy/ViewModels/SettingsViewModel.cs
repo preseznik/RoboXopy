@@ -36,6 +36,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     public string VersionText => $"Version {AppVersion.Display} · .NET {Environment.Version.ToString(2)}";
 
     public int[] RetentionChoices { get; } = [5, 10, 30, 60, 100, 250];
+    public int[] SimultaneousRunChoices { get; } = [2, 3];
 
     private void OnModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

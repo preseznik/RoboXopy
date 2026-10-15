@@ -60,6 +60,16 @@
                 <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Model.SchedulerPaused}"
                           AutomationProperties.Name="Pause in-app schedules" />
             </c:SettingsCard>
+            <c:SettingsCard Icon="&#xE8C8;" Header="Simultaneous scheduled runs"
+                            Description="By default, scheduled runs and previews queue one at a time. Turn this on to run up to two or three at once.">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Model.SimultaneousScheduledRuns}"
+                              AutomationProperties.Name="Simultaneous scheduled runs" />
+                    <ComboBox ItemsSource="{Binding SimultaneousRunChoices}" SelectedItem="{Binding Model.MaxSimultaneousScheduledRuns}"
+                              IsEnabled="{Binding Model.SimultaneousScheduledRuns}" MinWidth="92" Margin="12,0,0,0"
+                              ItemStringFormat="{}{0} runs" AutomationProperties.Name="Maximum simultaneous scheduled runs" />
+                </StackPanel>
+            </c:SettingsCard>
             <c:SettingsCard Icon="&#xE787;" Header="Windows Task Scheduler"
                             Description="{Binding TaskFolder, StringFormat='Tasks are registered in the {0} folder for your account.'}">
                 <Button Command="{Binding OpenTaskSchedulerCommand}" AutomationProperties.Name="Open Task Scheduler">

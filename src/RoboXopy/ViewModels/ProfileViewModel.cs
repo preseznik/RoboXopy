@@ -206,6 +206,11 @@ public sealed partial class ProfileViewModel : ObservableObject
     private bool _isRunningExternally;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Status), nameof(IsBusy), nameof(LastRunText))]
+    [NotifyCanExecuteChangedFor(nameof(RunCommand), nameof(PreviewCommand))]
+    private bool _isScheduledQueued;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Status), nameof(LastRunText), nameof(HasLastRun), nameof(HasLastLog))]
     private RunRecord? _lastRun;
 
@@ -223,7 +228,7 @@ public sealed partial class ProfileViewModel : ObservableObject
     [ObservableProperty] private HistoryErrorFilterOption _selectedHistoryErrorFilter = HistoryErrorFilters[0];
 
     public bool HasSession => Session is not null;
-    public bool IsBusy => IsRunning || IsRunningExternally;
+    public bool IsBusy => IsRunning || IsRunningExternally || IsScheduledQueued;
     public bool HasLastRun => LastRun is not null;
     public bool HasLastLog => LastRun?.LogFile is { } f && File.Exists(f);
     public bool HasHistory => History.Count > 0;
@@ -262,6 +267,7 @@ public sealed partial class ProfileViewModel : ObservableObject
         {
             if (IsRunning) return Session?.DryRun == true ? "Previewing…" : "Running…";
             if (IsRunningExternally) return "Running in another window or task…";
+            if (IsScheduledQueued) return "Queued for scheduled run…";
             if (LastRun is null) return "Never run";
             var when = ScheduleDescriber.FormatRelative(LastRun.StartedAt.LocalDateTime, DateTime.Now);
             return $"{RunFormatting.OutcomeTitle(LastRun.Outcome, LastRun.DryRun)} · {when}";
@@ -599,6 +605,8 @@ public sealed partial class ProfileViewModel : ObservableObject
         IsRunningExternally = !IsRunning && _host.Executor.IsRunningAnywhere(Model.Id);
         OnPropertyChanged(nameof(LastRunText));
     }
+
+    internal void SetScheduledQueued(bool value) => IsScheduledQueued = value;
 
     // ── Running ─────────────────────────────────────────────────────────
     private bool CanRun() => !IsBusy && !HasErrors;

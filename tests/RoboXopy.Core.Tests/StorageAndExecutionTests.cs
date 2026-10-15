@@ -219,4 +219,16 @@ public sealed class StorageAndExecutionTests : IDisposable
         var allowed = await executor.ExecuteAsync(new RunRequest(profile, RunTrigger.Manual, DryRun: true, ConfirmedHistoricalSourceDestination: true));
         Assert.NotEqual(RunOutcome.Error, allowed.Outcome);
     }
+
+    [Fact]
+    public void Settings_RoundTripScheduledRunConcurrency()
+    {
+        var settings = new AppSettings { SimultaneousScheduledRuns = true, MaxSimultaneousScheduledRuns = 3 };
+        var store = new SettingsStore(_paths);
+        store.Save(settings);
+
+        var loaded = store.Load();
+        Assert.True(loaded.SimultaneousScheduledRuns);
+        Assert.Equal(3, loaded.MaxSimultaneousScheduledRuns);
+    }
 }

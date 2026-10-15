@@ -83,6 +83,20 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
             return Finish(record, RobocopyExitCode.StartFailed, RunOutcome.Error, $"robocopy.exe was not found at \"{robocopy}\".");
         }
 
+        IDisposable? scheduledRunLease;
+        try
+        {
+            scheduledRunLease = request.Trigger is RunTrigger.Scheduled or RunTrigger.TaskScheduler
+                ? await ScheduledRunLimiter.AcquireAsync(paths, appSettings, cancellationToken).ConfigureAwait(false)
+                : null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return Finish(record, RobocopyExitCode.Cancelled, RunOutcome.Cancelled, "Cancelled while waiting for a scheduled run slot.");
+        }
+
+        using var scheduledRunLeaseScope = scheduledRunLease;
+
         var logDir = paths.ProfileLogsDirectory(profile.Id);
         Directory.CreateDirectory(logDir);
         record.LogFile = Path.Combine(logDir, $"{record.StartedAt:yyyyMMdd-HHmmss}{(request.DryRun ? "-preview" : "")}.log");

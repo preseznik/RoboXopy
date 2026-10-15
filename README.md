@@ -15,6 +15,7 @@ Built with WPF on .NET 10 and the Windows 11 (Fluent) theme. Light, dark and sys
   - **RoboXopy (in-app)**: runs while RoboXopy is open or in the notification area. "Start with Windows" keeps it running in the background.
   - **Windows Task Scheduler**: registers a task under `\RoboXopy\` for your account, so it runs even when RoboXopy is closed.
   - A schedule can run as a **preview only**. It never changes files; when it finds pending copies, removals, mismatches, or failures, the profile is marked stale.
+  - Scheduled runs and previews queue one at a time by default, including jobs launched by Windows Task Scheduler. Settings can allow two or three simultaneous scheduled operations.
 - **Stale sync status**: a timer-ring and **STALE** badge show when a profile has not successfully synced for 24 hours (amber) or 7 days (red). Interval schedules turn amber after one missed interval and red after three. A scheduled preview that finds changes also marks the profile stale until a successful sync.
 - **History** for each profile, with the outcome, trigger, totals, duration and a link to the log. An **Activity** chart shows how much each run copied and removed over time (by size or file count), next to the source's total.
 - **Unusual-run checks**: each run and preview is compared with the profile's recent runs. A source that suddenly shrank, a mirror that would remove far more than usual, or an unusually large copy is pointed out. After a preview like that, **Run** asks for confirmation first.

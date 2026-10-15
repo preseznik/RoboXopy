@@ -4,6 +4,12 @@ All notable changes to RoboXopy are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-10-15
+
+### Added
+
+- **Scheduled run queue.** Simultaneous scheduled runs and previews now queue by default, including profiles started by Windows Task Scheduler and multiple at-sign-in profiles. Settings can opt in to two or three simultaneous scheduled operations; three is the hard limit.
+
 ## [1.4.0] - 2026-10-15
 
 ### Added
