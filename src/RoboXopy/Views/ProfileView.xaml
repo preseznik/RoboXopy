@@ -1201,7 +1201,8 @@
                         </ListBox.ItemsPanel>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Grid TextElement.FontFamily="{StaticResource MonoFont}" TextElement.FontSize="12" Margin="16,0,0,0">
+                                <Grid TextElement.FontFamily="{StaticResource MonoFont}" TextElement.FontSize="12" Margin="16,0,0,0"
+                                      Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ListBox}}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="112" />
                                         <ColumnDefinition Width="*" />
@@ -1213,6 +1214,14 @@
                                                Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                                     <TextBlock x:Name="SizeText" Grid.Column="2" Text="{Binding SizeText}" Margin="12,0,0,0"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <Grid.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Open in Explorer"
+                                                      Command="{Binding PlacementTarget.Tag.RevealOutputEntryCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                      IsEnabled="{Binding PlacementTarget.DataContext.CanReveal, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                        </ContextMenu>
+                                    </Grid.ContextMenu>
                                 </Grid>
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding Kind}" Value="Text">

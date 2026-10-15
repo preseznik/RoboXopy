@@ -59,6 +59,7 @@ public sealed class OutputEntry
     public long? Size { get; }
     public string? SizeText { get; }
     public bool IsExtra { get; }
+    public bool CanReveal => !string.IsNullOrWhiteSpace(Name) && Path.IsPathRooted(Name);
     public OutputAdditionType AdditionType { get; }
     public string AdditionTypeText => AdditionType switch
     {
@@ -286,6 +287,12 @@ public sealed partial class RunSessionViewModel : ObservableObject
         IsOutputSortDescending = SelectedOutputSortColumn == column && !IsOutputSortDescending;
         SelectedOutputSortColumn = column;
         RefreshFilteredEntries();
+    }
+
+    [RelayCommand]
+    private void RevealOutputEntry(OutputEntry? entry)
+    {
+        if (entry?.CanReveal == true) Shell.Reveal(entry.Name!);
     }
 
     /// <summary>Thread-safe; called from robocopy's output thread.</summary>

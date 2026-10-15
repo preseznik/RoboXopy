@@ -122,6 +122,12 @@ public sealed partial class HistoryRunDetailViewModel : ObservableObject
         if (HasLog) Shell.Open(Record.LogFile!);
     }
 
+    [RelayCommand]
+    private void RevealOutputEntry(OutputEntry? entry)
+    {
+        if (entry?.CanReveal == true) Shell.Reveal(entry.Name!);
+    }
+
     private SavedOutput ReadEntries()
     {
         var output = new List<OutputEntry>();

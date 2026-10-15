@@ -87,11 +87,20 @@
                 <ListBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate></ListBox.ItemsPanel>
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Grid TextElement.FontFamily="{StaticResource MonoFont}" TextElement.FontSize="12" Margin="12,0,0,0">
+                        <Grid TextElement.FontFamily="{StaticResource MonoFont}" TextElement.FontSize="12" Margin="12,0,0,0"
+                              Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ListBox}}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="112" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                             <TextBlock Text="{Binding AdditionTypeText}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                             <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
                             <TextBlock Grid.Column="2" Text="{Binding SizeText}" Margin="12,0,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <Grid.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Open in Explorer"
+                                              Command="{Binding PlacementTarget.Tag.RevealOutputEntryCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                              IsEnabled="{Binding PlacementTarget.DataContext.CanReveal, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                </ContextMenu>
+                            </Grid.ContextMenu>
                         </Grid>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
