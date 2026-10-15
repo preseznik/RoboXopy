@@ -1131,81 +1131,136 @@
                     </c:InfoBar.Style>
                 </c:InfoBar>
 
-                <!-- Output lines -->
-                <ListBox Grid.Row="5" x:Name="OutputList" ItemsSource="{Binding FilteredEntries}" Style="{StaticResource BareListBoxStyle}"
-                         ItemContainerStyle="{StaticResource OutputListBoxItemStyle}" Padding="0,0,0,8"
-                         c:AutoScroll.IsEnabled="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
-                         ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto"
-                         AutomationProperties.Name="Robocopy output">
-                    <ListBox.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <VirtualizingStackPanel />
-                        </ItemsPanelTemplate>
-                    </ListBox.ItemsPanel>
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Grid TextElement.FontFamily="{StaticResource MonoFont}" TextElement.FontSize="12" Margin="16,0,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="112" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock x:Name="StatusText" Text="{Binding Status}" TextTrimming="CharacterEllipsis"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                <TextBlock x:Name="MainText" Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
-                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                <TextBlock x:Name="SizeText" Grid.Column="2" Text="{Binding SizeText}" Margin="12,0,0,0"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            </Grid>
-                            <DataTemplate.Triggers>
-                                <DataTrigger Binding="{Binding Kind}" Value="Text">
-                                    <Setter TargetName="StatusText" Property="Visibility" Value="Collapsed" />
-                                    <Setter TargetName="MainText" Property="Grid.Column" Value="0" />
-                                    <Setter TargetName="MainText" Property="Grid.ColumnSpan" Value="3" />
-                                    <Setter TargetName="MainText" Property="Text" Value="{Binding Text}" />
-                                    <Setter TargetName="MainText" Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding Kind}" Value="Progress">
-                                    <Setter TargetName="StatusText" Property="Visibility" Value="Collapsed" />
-                                    <Setter TargetName="MainText" Property="Grid.Column" Value="0" />
-                                    <Setter TargetName="MainText" Property="Grid.ColumnSpan" Value="3" />
-                                    <Setter TargetName="MainText" Property="Text" Value="{Binding Text}" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding Kind}" Value="Error">
-                                    <Setter TargetName="StatusText" Property="Visibility" Value="Collapsed" />
-                                    <Setter TargetName="MainText" Property="Grid.Column" Value="0" />
-                                    <Setter TargetName="MainText" Property="Grid.ColumnSpan" Value="3" />
-                                    <Setter TargetName="MainText" Property="Text" Value="{Binding Text}" />
-                                    <Setter TargetName="MainText" Property="TextWrapping" Value="Wrap" />
-                                    <Setter TargetName="MainText" Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding Kind}" Value="Directory">
-                                    <Setter TargetName="MainText" Property="FontWeight" Value="SemiBold" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding IsExtra}" Value="True">
-                                    <Setter TargetName="StatusText" Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
-                                </DataTrigger>
-                            </DataTemplate.Triggers>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
+                <!-- Output lines, with composable type/name filters and sortable columns. -->
+                <Grid Grid.Row="5" Background="{Binding OutputListBackground}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
-                <!-- A robocopy summary counts files, while the output can also contain directory records. -->
-                <Border Grid.Row="5" VerticalAlignment="Bottom" Padding="16,8" Background="{DynamicResource ControlFillColorDefaultBrush}"
-                        Visibility="{Binding IsBreakdownFilterActive, Converter={StaticResource BoolToVisibility}}">
-                    <StackPanel>
-                        <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                            <Run>Showing</Run>
-                            <Run Text="{Binding FilteredEntriesDisplayCount, StringFormat=N0}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
-                            <Run>matching output rows. Robocopy summary reports</Run>
-                            <Run Text="{Binding FilteredEntriesTotalCount, StringFormat=N0}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
-                            <Run>files.</Run>
-                        </TextBlock>
-                        <TextBlock Margin="0,2,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                   Text="Only the most recent 5,000 output rows are retained."
-                                   Visibility="{Binding HasFilteredOutputLimitNotice, Converter={StaticResource BoolToVisibility}}" />
-                    </StackPanel>
-                </Border>
+                    <Grid Margin="16,8,16,4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Text="Filter:" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <ComboBox Margin="8,0,12,0" MinWidth="132"
+                                      ItemsSource="{x:Static vm:RunSessionViewModel.OutputTypeFilters}"
+                                      DisplayMemberPath="Label"
+                                      SelectedItem="{Binding SelectedOutputTypeFilter}"
+                                      AutomationProperties.Name="Filter output by addition type" />
+                            <TextBox Width="250" Text="{Binding OutputNameFilter, UpdateSourceTrigger=PropertyChanged}"
+                                     VerticalContentAlignment="Center"
+                                     ToolTip="Filter by file or folder name"
+                                     AutomationProperties.Name="Filter output by file or folder name">
+                                <TextBox.Style>
+                                    <Style TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+                                        <Setter Property="Padding" Value="8,3" />
+                                    </Style>
+                                </TextBox.Style>
+                            </TextBox>
+                        </StackPanel>
+                        <Grid Grid.Row="1" Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="112" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Button HorizontalAlignment="Left" Padding="0" Background="Transparent" BorderThickness="0"
+                                    Command="{Binding SortOutputCommand}" CommandParameter="{x:Static vm:OutputSortColumn.AdditionType}"
+                                    ToolTip="Sort by addition type; click again to reverse">
+                                <TextBlock Text="TYPE" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </Button>
+                            <Button Grid.Column="1" HorizontalAlignment="Left" Padding="0" Background="Transparent" BorderThickness="0"
+                                    Command="{Binding SortOutputCommand}" CommandParameter="{x:Static vm:OutputSortColumn.Name}"
+                                    ToolTip="Sort by name; click again to reverse">
+                                <TextBlock Text="NAME" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </Button>
+                            <Button Grid.Column="2" HorizontalAlignment="Right" Padding="0" Background="Transparent" BorderThickness="0"
+                                    Command="{Binding SortOutputCommand}" CommandParameter="{x:Static vm:OutputSortColumn.Size}"
+                                    ToolTip="Sort by size; click again to reverse">
+                                <TextBlock Text="SIZE" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </Button>
+                        </Grid>
+                    </Grid>
+
+                    <ListBox Grid.Row="1" x:Name="OutputList" ItemsSource="{Binding FilteredEntries}" Style="{StaticResource BareListBoxStyle}"
+                             ItemContainerStyle="{StaticResource OutputListBoxItemStyle}" Padding="0,0,0,8"
+                             c:AutoScroll.IsEnabled="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                             ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             AutomationProperties.Name="Robocopy output">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid TextElement.FontFamily="{StaticResource MonoFont}" TextElement.FontSize="12" Margin="16,0,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="112" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="StatusText" Text="{Binding AdditionTypeText}" TextTrimming="CharacterEllipsis"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock x:Name="MainText" Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                    <TextBlock x:Name="SizeText" Grid.Column="2" Text="{Binding SizeText}" Margin="12,0,0,0"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                </Grid>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Kind}" Value="Text">
+                                        <Setter TargetName="StatusText" Property="Visibility" Value="Collapsed" />
+                                        <Setter TargetName="MainText" Property="Grid.Column" Value="0" />
+                                        <Setter TargetName="MainText" Property="Grid.ColumnSpan" Value="3" />
+                                        <Setter TargetName="MainText" Property="Text" Value="{Binding Text}" />
+                                        <Setter TargetName="MainText" Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="Progress">
+                                        <Setter TargetName="StatusText" Property="Visibility" Value="Collapsed" />
+                                        <Setter TargetName="MainText" Property="Grid.Column" Value="0" />
+                                        <Setter TargetName="MainText" Property="Grid.ColumnSpan" Value="3" />
+                                        <Setter TargetName="MainText" Property="Text" Value="{Binding Text}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="Error">
+                                        <Setter TargetName="StatusText" Property="Visibility" Value="Collapsed" />
+                                        <Setter TargetName="MainText" Property="Grid.Column" Value="0" />
+                                        <Setter TargetName="MainText" Property="Grid.ColumnSpan" Value="3" />
+                                        <Setter TargetName="MainText" Property="Text" Value="{Binding Text}" />
+                                        <Setter TargetName="MainText" Property="TextWrapping" Value="Wrap" />
+                                        <Setter TargetName="MainText" Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="Directory">
+                                        <Setter TargetName="MainText" Property="FontWeight" Value="SemiBold" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsExtra}" Value="True">
+                                        <Setter TargetName="StatusText" Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <!-- A robocopy summary counts files, while the output can also contain directory records. -->
+                    <Border Grid.Row="2" Padding="16,8" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                            Visibility="{Binding IsBreakdownFilterActive, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel>
+                            <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                <Run>Showing</Run>
+                                <Run Text="{Binding FilteredEntriesDisplayCount, StringFormat=N0}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
+                                <Run>matching output rows. The selected breakdown reports</Run>
+                                <Run Text="{Binding FilteredEntriesTotalCount, StringFormat=N0}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
+                                <Run>files before type and name filters.</Run>
+                            </TextBlock>
+                            <TextBlock Margin="0,2,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Text="Only the most recent 5,000 output rows are retained."
+                                       Visibility="{Binding HasFilteredOutputLimitNotice, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
             </Grid>
         </Border>
     </Grid>

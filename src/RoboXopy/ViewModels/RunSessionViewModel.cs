@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Windows.Media;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -10,6 +11,24 @@ using RoboXopy.Core.Robocopy;
 using RoboXopy.Infrastructure;
 
 namespace RoboXopy.ViewModels;
+
+public enum OutputAdditionType
+{
+    Other,
+    NewFile,
+    Newer,
+    ExtraDirectory,
+    ExtraFile,
+}
+
+public enum OutputSortColumn
+{
+    Name,
+    Size,
+    AdditionType,
+}
+
+public sealed record OutputTypeFilter(string Label, OutputAdditionType? Type);
 
 /// <summary>A line in the live output panel.</summary>
 public sealed class OutputEntry
@@ -21,8 +40,10 @@ public sealed class OutputEntry
         Status = line.Status?.Trim();
         Name = line.Name?.Trim();
         IsExtra = line.IsExtra;
+        Size = line.Size;
         SizeText = line.Size is { } size ? RunFormatting.FormatBytes(size) : null;
         if (string.IsNullOrEmpty(Status)) Status = Kind == OutputLineKind.Directory ? "Folder" : null;
+        AdditionType = GetAdditionType();
     }
 
     public OutputEntry(OutputLineKind kind, string text)
@@ -35,11 +56,28 @@ public sealed class OutputEntry
     public string Text { get; }
     public string? Status { get; }
     public string? Name { get; }
+    public long? Size { get; }
     public string? SizeText { get; }
     public bool IsExtra { get; }
+    public OutputAdditionType AdditionType { get; }
+    public string AdditionTypeText => AdditionType switch
+    {
+        OutputAdditionType.NewFile => "New file",
+        OutputAdditionType.Newer => "Newer",
+        OutputAdditionType.ExtraDirectory => "Extra dir",
+        OutputAdditionType.ExtraFile => "Extra file",
+        _ => Status ?? string.Empty,
+    };
 
     /// <summary>Used by WPF as the accessible name of the output line.</summary>
     public override string ToString() => Text;
+
+    private OutputAdditionType GetAdditionType()
+    {
+        if (IsExtra) return Kind == OutputLineKind.Directory ? OutputAdditionType.ExtraDirectory : OutputAdditionType.ExtraFile;
+        if (Status?.Equals("New File", StringComparison.OrdinalIgnoreCase) == true) return OutputAdditionType.NewFile;
+        return Status?.Equals("Newer", StringComparison.OrdinalIgnoreCase) == true ? OutputAdditionType.Newer : OutputAdditionType.Other;
+    }
 }
 
 /// <summary>Live state of a run started from this window: output, counters and the final result.</summary>
@@ -65,6 +103,15 @@ public sealed partial class RunSessionViewModel : ObservableObject
     }
 
     public ObservableCollection<OutputEntry> Entries { get; } = [];
+    public static IReadOnlyList<OutputTypeFilter> OutputTypeFilters { get; } =
+    [
+        new("All types", null),
+        new("New file", OutputAdditionType.NewFile),
+        new("Newer", OutputAdditionType.Newer),
+        new("Extra dir", OutputAdditionType.ExtraDirectory),
+        new("Extra file", OutputAdditionType.ExtraFile),
+    ];
+
     public CancellationTokenSource Cancellation { get; } = new();
     public bool DryRun { get; }
     public RunTrigger Trigger { get; }
@@ -96,6 +143,7 @@ public sealed partial class RunSessionViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsBreakdownFilterActive))]
     [NotifyPropertyChangedFor(nameof(HasFilteredOutputLimitNotice))]
+    [NotifyPropertyChangedFor(nameof(OutputListBackground))]
     private BreakdownKind? _selectedBreakdownKind;
 
     /// <summary>Unusual things about the run compared with the profile's history, one per line.</summary>
@@ -110,28 +158,60 @@ public sealed partial class RunSessionViewModel : ObservableObject
     [ObservableProperty] private IReadOnlyList<OutputEntry> _filteredEntries = [];
     [ObservableProperty] private long _filteredEntriesDisplayCount;
     [ObservableProperty] private long _filteredEntriesTotalCount;
+    [ObservableProperty] private string _outputNameFilter = "";
+    [ObservableProperty] private OutputTypeFilter _selectedOutputTypeFilter = OutputTypeFilters[0];
+    [ObservableProperty] private OutputSortColumn? _selectedOutputSortColumn;
+    [ObservableProperty] private bool _isOutputSortDescending;
 
     public bool HasBreakdown => Breakdown is { Count: > 0 };
     public bool HasFindings => !string.IsNullOrEmpty(FindingsText);
     public bool IsBreakdownFilterActive => SelectedBreakdownKind is not null;
     public bool HasFilteredOutputLimitNotice => IsBreakdownFilterActive && Trimmed;
+    public Brush? OutputListBackground => SelectedBreakdownKind switch
+    {
+        BreakdownKind.Unchanged => new SolidColorBrush(Color.FromArgb(20, 128, 128, 128)),
+        BreakdownKind.Copied => new SolidColorBrush(Color.FromArgb(28, 59, 142, 219)),
+        BreakdownKind.Removed => new SolidColorBrush(Color.FromArgb(30, 226, 101, 77)),
+        BreakdownKind.Kept => new SolidColorBrush(Color.FromArgb(25, 128, 128, 128)),
+        _ => null,
+    };
 
     partial void OnSelectedBreakdownKindChanged(BreakdownKind? value) => RefreshFilteredEntries();
     partial void OnBreakdownChanged(IReadOnlyList<BreakdownSegment>? value) => RefreshFilteredEntries();
     partial void OnTrimmedChanged(bool value) => OnPropertyChanged(nameof(HasFilteredOutputLimitNotice));
+    partial void OnOutputNameFilterChanged(string value) => RefreshFilteredEntries();
+    partial void OnSelectedOutputTypeFilterChanged(OutputTypeFilter value) => RefreshFilteredEntries();
 
     private void RefreshFilteredEntries()
     {
-        var entries = SelectedBreakdownKind is { } kind
-            ? Entries.Where(entry => EntryMatchesKind(entry, kind)).ToList()
-            : Entries.ToList();
+        IEnumerable<OutputEntry> entries = Entries;
+        if (SelectedBreakdownKind is { } kind) entries = entries.Where(entry => EntryMatchesKind(entry, kind));
+        if (SelectedOutputTypeFilter.Type is { } type) entries = entries.Where(entry => entry.AdditionType == type);
+        if (!string.IsNullOrWhiteSpace(OutputNameFilter))
+        {
+            entries = entries.Where(entry => entry.Name?.Contains(OutputNameFilter, StringComparison.OrdinalIgnoreCase) == true);
+        }
 
-        FilteredEntries = entries;
-        FilteredEntriesDisplayCount = entries.Count;
+        entries = SortEntries(entries);
+        var displayedEntries = entries.ToList();
+
+        FilteredEntries = displayedEntries;
+        FilteredEntriesDisplayCount = displayedEntries.Count;
         FilteredEntriesTotalCount = SelectedBreakdownKind is { } selectedKind
             ? Breakdown?.FirstOrDefault(segment => segment.Kind == selectedKind)?.Count ?? 0
-            : entries.Count;
+            : displayedEntries.Count;
     }
+
+    private IEnumerable<OutputEntry> SortEntries(IEnumerable<OutputEntry> entries) => SelectedOutputSortColumn switch
+    {
+        OutputSortColumn.Name when IsOutputSortDescending => entries.OrderByDescending(entry => entry.Name, StringComparer.OrdinalIgnoreCase),
+        OutputSortColumn.Name => entries.OrderBy(entry => entry.Name, StringComparer.OrdinalIgnoreCase),
+        OutputSortColumn.Size when IsOutputSortDescending => entries.OrderByDescending(entry => entry.Size ?? -1),
+        OutputSortColumn.Size => entries.OrderBy(entry => entry.Size ?? -1),
+        OutputSortColumn.AdditionType when IsOutputSortDescending => entries.OrderByDescending(entry => entry.AdditionType),
+        OutputSortColumn.AdditionType => entries.OrderBy(entry => entry.AdditionType),
+        _ => entries,
+    };
 
     private static bool EntryMatchesKind(OutputEntry entry, BreakdownKind kind) => kind switch
     {
@@ -147,6 +227,14 @@ public sealed partial class RunSessionViewModel : ObservableObject
     public string ExtrasLabel { get; }
 
     partial void OnByteCountChanged(long value) => OnPropertyChanged(nameof(BytesText));
+
+    [RelayCommand]
+    private void SortOutput(OutputSortColumn column)
+    {
+        IsOutputSortDescending = SelectedOutputSortColumn == column && !IsOutputSortDescending;
+        SelectedOutputSortColumn = column;
+        RefreshFilteredEntries();
+    }
 
     /// <summary>Thread-safe; called from robocopy's output thread.</summary>
     public void Post(OutputLine line) => _pending.Enqueue(line);
