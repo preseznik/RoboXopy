@@ -162,6 +162,7 @@ public sealed class UnreadableFoldersTests : IDisposable
 
         Assert.NotNull(finding);
         Assert.Contains("Check the log", finding.Message);
+        Assert.True(finding.MayRequireElevation);
     }
 
     [Fact]

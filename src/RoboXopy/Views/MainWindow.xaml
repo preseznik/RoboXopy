@@ -34,6 +34,15 @@
         <StackPanel Grid.ColumnSpan="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="18,0,0,0">
             <Image Source="/Assets/Logo.png" Width="18" Height="18" RenderOptions.BitmapScalingMode="HighQuality" />
             <TextBlock Text="RoboXopy" Margin="12,0,0,1" VerticalAlignment="Center" FontSize="12" />
+            <Menu Margin="16,0,0,0" Background="Transparent" VerticalAlignment="Center" WindowChrome.IsHitTestVisibleInChrome="True">
+                <MenuItem Header="Profiles">
+                    <MenuItem Header="New profile…" Command="{Binding OpenProfileWizardCommand}" />
+                    <MenuItem Header="New blank profile" Command="{Binding NewBlankProfileCommand}" />
+                    <Separator />
+                    <MenuItem Header="Import RoboXopy profiles…" Command="{Binding ImportProfilesCommand}" />
+                    <MenuItem Header="Import robocopy batch file…" Command="{Binding ImportBatchFileCommand}" />
+                </MenuItem>
+            </Menu>
             <Border Margin="12,0,0,0" Padding="8,2,8,3" CornerRadius="4" VerticalAlignment="Center"
                     Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
                     Visibility="{Binding Host.Settings.SchedulerPaused, Converter={StaticResource BoolToVisibility}}"
@@ -90,8 +99,8 @@
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
-                    <Button Style="{StaticResource IconButtonStyle}" Content="&#xE710;" ToolTip="New profile (Ctrl+N)"
-                            AutomationProperties.Name="New profile" Command="{Binding NewProfileCommand}" />
+                    <Button Style="{StaticResource IconButtonStyle}" Content="&#xE710;" ToolTip="Create a profile with the setup wizard (Ctrl+N)"
+                            AutomationProperties.Name="Create profile with wizard" Command="{Binding OpenProfileWizardCommand}" />
                 </StackPanel>
             </Grid>
 

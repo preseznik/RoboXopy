@@ -10,10 +10,10 @@
                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                    Text="A profile is one robocopy job: a source, a destination, how to copy, what to filter and when to run. Create one to get started." />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24,0,0">
-            <Button Style="{StaticResource ToolbarAccentButtonStyle}" Command="{Binding NewProfileCommand}" AutomationProperties.Name="Create new profile">
+            <Button Style="{StaticResource ToolbarAccentButtonStyle}" Command="{Binding OpenProfileWizardCommand}" AutomationProperties.Name="Create profile with wizard">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE710;" FontSize="14" Margin="0,0,8,0" />
-                    <TextBlock Text="New profile" />
+                    <TextBlock Text="Create profile" />
                 </StackPanel>
             </Button>
             <Button Style="{StaticResource ToolbarButtonStyle}" Margin="8,0,0,0" c:DropDownMenu.IsEnabled="True" AutomationProperties.Name="Import…">

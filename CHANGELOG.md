@@ -4,6 +4,22 @@ All notable changes to RoboXopy are listed here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-15
+
+### Added
+
+- **Profile creation wizard.** RoboXopy now opens a guided first-profile flow at startup. Choose a source folder, destination folder, and either safe copy or mirror behavior; then review the automatically suggested name and conservative defaults before creating the profile. The wizard is also available from **Profiles**, the profile-panel **+** button, and the empty state. Its startup prompt can be turned off without removing the wizard from those entry points.
+- **Output and history inspection.** The run-output list supports breakdown selection, muted category tinting, type filters, live name filtering, sort columns with a persistent direction toggle, displayed-size totals, and Explorer actions. Recent runs can be filtered by preview versus actual run and error state; a saved run can be opened in a detailed output window.
+- **Permission recovery.** When a manual preview or run cannot access source folders, RoboXopy offers to restart as administrator. The completed output panel also retains a **Restart as administrator** action so the option remains available after the initial prompt.
+
+### Changed
+
+- Live run output retains up to 50,000 rows per breakdown category, preventing high-volume unchanged or copied output from displacing extra/removal results.
+
+### Fixed
+
+- Profile wizard startup no longer fails while resolving its review-field styling.
+
 ## [1.2.2] - 2026-10-10
 
 ### Fixed

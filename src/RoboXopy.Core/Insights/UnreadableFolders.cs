@@ -84,6 +84,9 @@ public static class UnreadableFolders
             Kind = RunFindingKind.UnreadableFolders,
             Severity = FindingSeverity.Warning,
             Message = Describe(failed, found, redirectionGuard),
+            // Robocopy often omits the folder name for access-denied failures. In that case the
+            // user should still be able to retry with an elevated token.
+            MayRequireElevation = !redirectionGuard && (found.Count == 0 || found.Any(folder => !folder.Link)),
         };
     }
 

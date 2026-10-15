@@ -28,6 +28,8 @@ public sealed record CommandLineOptions
 
     /// <summary>Internal: this process was restarted through Explorer to shed RedirectionGuard, so don't try again.</summary>
     public bool Relaunched { get; init; }
+    /// <summary>Internal: wait for this GUI process to exit before acquiring the single-instance mutex.</summary>
+    public int? WaitForProcessId { get; init; }
 
     public static CommandLineOptions Parse(IReadOnlyList<string> args)
     {
@@ -86,6 +88,14 @@ public sealed record CommandLineOptions
                     break;
                 case "--relaunched":
                     options = options with { Relaunched = true };
+                    break;
+                case "--wait-for-pid":
+                    var processId = NextValue(args, ref i, arg);
+                    if (!int.TryParse(processId, out var pid) || pid <= 0)
+                    {
+                        throw new ArgumentException($"{arg} needs a positive process id.");
+                    }
+                    options = options with { WaitForProcessId = pid };
                     break;
                 default:
                     throw new ArgumentException($"Unknown argument '{arg}'.");

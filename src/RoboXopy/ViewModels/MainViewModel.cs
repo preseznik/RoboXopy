@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Security.Principal;
 using System.Text.Json;
 using System.Windows.Data;
 using System.Windows.Threading;
@@ -122,6 +123,31 @@ public sealed partial class MainViewModel : ObservableObject
 
     public Task AlertAsync(string title, string message) => Dialog.ShowAsync(title, message, "OK", null);
 
+    public async Task OfferRestartAsAdministratorAsync(RunRecord record)
+    {
+        if (!record.HasPermissionIssue || IsAdministrator()) return;
+
+        var action = await Dialog.ShowAsync(
+            record.DryRun ? "Preview needs additional permission" : "Run needs additional permission",
+            "RoboXopy couldn't access one or more folders. Restarting as administrator may allow it to read or copy them. " +
+            "The completed run will not be repeated automatically.",
+            "Restart as administrator",
+            "Not now");
+        if (!action) return;
+
+        var result = await App.Current.RestartAsAdministratorAsync();
+        if (result.Error is not null)
+        {
+            await AlertAsync("Couldn't restart as administrator", result.Error);
+        }
+    }
+
+    private static bool IsAdministrator()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+    }
+
     private void OnModalPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(DialogViewModel.IsOpen)) OnPropertyChanged(nameof(IsModalOpen));
@@ -195,6 +221,30 @@ public sealed partial class MainViewModel : ObservableObject
     // ── Profile management ──────────────────────────────────────────────
     [RelayCommand]
     private void NewProfile()
+    {
+        OpenProfileWizard();
+    }
+
+    [RelayCommand]
+    private void OpenProfileWizard()
+    {
+        var owner = System.Windows.Application.Current.MainWindow;
+        if (owner is null) return;
+        var wizard = new Views.ProfileCreationWizardWindow(this) { Owner = owner };
+        wizard.ShowDialog();
+    }
+
+    public void CreateProfileFromWizard(SyncProfile profile)
+    {
+        profile.Name = UniqueName(string.IsNullOrWhiteSpace(profile.Name) ? "New profile" : profile.Name.Trim());
+        profile.SortOrder = NextSortOrder();
+        profile.CreatedAt = DateTimeOffset.Now;
+        Add(profile, Profiles.Count);
+        ProfileCreated?.Invoke(this, EventArgs.Empty);
+    }
+
+    [RelayCommand]
+    private void NewBlankProfile()
     {
         var profile = new SyncProfile
         {

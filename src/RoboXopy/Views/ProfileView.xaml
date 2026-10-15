@@ -1042,6 +1042,10 @@
                         <Run Text="{Binding ElapsedText, Mode=OneWay}" />
                     </TextBlock>
                     <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="12,0,0,0">
+                        <Button Content="Restart as administrator" Margin="0,0,8,0"
+                                Command="{Binding DataContext.RestartAsAdministratorCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                ToolTip="Restart RoboXopy with administrator permissions"
+                                Visibility="{Binding HasPermissionIssue, Converter={StaticResource BoolToVisibility}}" />
                         <Button Content="Open log" Command="{Binding OpenLogCommand}" Margin="0,0,4,0">
                             <Button.Style>
                                 <Style TargetType="Button" BasedOn="{StaticResource LinkButtonStyle}">

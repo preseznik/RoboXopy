@@ -26,6 +26,7 @@ public sealed partial class AppSettings : ObservableObject
     [ObservableProperty] private double _outputPanelHeight = 240;
     [ObservableProperty] private Guid? _lastSelectedProfileId;
     [ObservableProperty] private bool _trayHintShown;
+    [ObservableProperty] private bool _skipProfileWizard;
 
     public string ResolveRobocopyPath() =>
         string.IsNullOrWhiteSpace(RobocopyPath)

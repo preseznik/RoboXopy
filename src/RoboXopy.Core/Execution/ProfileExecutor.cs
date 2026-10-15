@@ -101,6 +101,7 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or IOException)
         {
             lock (logSync) log.WriteLine($"Failed to start robocopy: {ex.Message}");
+            record.HasPermissionIssue = PermissionIssueDetector.IsAccessDenied(ex);
             return Finish(record, RobocopyExitCode.StartFailed, RunOutcome.Error, $"Failed to start robocopy: {ex.Message}");
         }
 
@@ -114,6 +115,8 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
         {
             (record.Findings ??= []).Insert(0, unreadable);
         }
+        record.HasPermissionIssue = PermissionIssueDetector.HasAccessDeniedOutput(result.Lines)
+            || record.Findings?.Any(finding => finding.MayRequireElevation) == true;
 
         lock (logSync)
         {

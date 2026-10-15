@@ -1,5 +1,7 @@
 using System.Windows;
 using System.Windows.Threading;
+using System.ComponentModel;
+using System.Diagnostics;
 using RoboXopy.Core.Models;
 using RoboXopy.Core.Scheduling;
 using RoboXopy.Core.Storage;
@@ -38,6 +40,11 @@ public partial class App : Application
     public MainViewModel Main { get; private set; } = null!;
     public TrayIconService? Tray { get; private set; }
 
+    public sealed record ElevationRestartResult(string? Error)
+    {
+        public bool Started => Error is null;
+    }
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -66,6 +73,10 @@ public partial class App : Application
         Main.Updates.UpdateFound += OnUpdateFound;
         Main.Updates.Start();
         Dispatcher.BeginInvoke(NotifyIfUpdated, DispatcherPriority.ApplicationIdle);
+        if (!Host.Settings.SkipProfileWizard)
+        {
+            Dispatcher.BeginInvoke(() => Main.OpenProfileWizardCommand.Execute(null), DispatcherPriority.ApplicationIdle);
+        }
 
         _scheduler = new AppScheduler(Main);
         _scheduler.Start();
@@ -160,6 +171,34 @@ public partial class App : Application
         _window.Activate();
         var handle = new System.Windows.Interop.WindowInteropHelper(_window).Handle;
         if (handle != 0) NativeMethods.SetForegroundWindow(handle);
+    }
+
+    public async Task<ElevationRestartResult> RestartAsAdministratorAsync()
+    {
+        if (_exiting) return new("RoboXopy is already closing.");
+
+        try
+        {
+            var arguments = $"--wait-for-pid {Environment.ProcessId}{Host.Paths.LaunchArguments}";
+            var startInfo = new ProcessStartInfo(Host.ExePath, arguments)
+            {
+                UseShellExecute = true,
+                Verb = "runas",
+                WorkingDirectory = Path.GetDirectoryName(Host.ExePath) ?? AppContext.BaseDirectory,
+            };
+            if (Process.Start(startInfo) is null) return new("Windows couldn't start the elevated RoboXopy process.");
+        }
+        catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            return new(null);
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+        {
+            return new(ex.Message);
+        }
+
+        await ExitApplicationAsync(force: true);
+        return new(null);
     }
 
     private void OnMainWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e)

@@ -24,4 +24,7 @@ public sealed record RunFinding
     public RunFindingKind Kind { get; init; }
     public FindingSeverity Severity { get; init; }
     public string Message { get; init; } = "";
+
+    /// <summary>True when the finding indicates access that an elevated process may have.</summary>
+    public bool MayRequireElevation { get; init; }
 }

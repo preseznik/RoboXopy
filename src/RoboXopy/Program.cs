@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using RoboXopy.Core.Platform;
 using RoboXopy.Core.Robocopy;
 using RoboXopy.Core.Storage;
@@ -36,6 +37,7 @@ public static class Program
         if (options.UninstallCleanup) return HeadlessRunner.UninstallCleanup();
         if (options.ListProfiles) return HeadlessRunner.ListProfiles();
         if (options.RunProfile is not null) return HeadlessRunner.Run(options);
+        WaitForPreviousInstance(options.WaitForProcessId);
 
         // An installer (Inno Setup 7) may have started us with RedirectionGuard, which every robocopy we start
         // would inherit and then skip junctions. It can't be switched off, so restart through Explorer instead.
@@ -56,5 +58,19 @@ public static class Program
         var app = new App(options, instance);
         app.InitializeComponent();
         return app.Run();
+    }
+
+    private static void WaitForPreviousInstance(int? processId)
+    {
+        if (processId is not { } pid) return;
+        try
+        {
+            using var process = Process.GetProcessById(pid);
+            process.WaitForExit(15_000);
+        }
+        catch (ArgumentException)
+        {
+            // The process has already exited.
+        }
     }
 }

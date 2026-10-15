@@ -145,6 +145,7 @@ public sealed partial class RunSessionViewModel : ObservableObject
     [ObservableProperty] private string? _resultMessage;
     [ObservableProperty] private string? _logFile;
     [ObservableProperty] private bool _trimmed;
+    [ObservableProperty] private bool _hasPermissionIssue;
 
     /// <summary>What happened (or would happen) to the files, once the run has finished with a summary.</summary>
     [ObservableProperty]
@@ -331,6 +332,7 @@ public sealed partial class RunSessionViewModel : ObservableObject
 
         Outcome = record.Outcome;
         LogFile = record.LogFile;
+        HasPermissionIssue = record.HasPermissionIssue;
         ResultTitle = RunFormatting.OutcomeTitle(record.Outcome, record.DryRun);
         Breakdown = BuildBreakdown(record);
         // The breakdown already lists the counts, so the result bar only needs robocopy's message (if any).

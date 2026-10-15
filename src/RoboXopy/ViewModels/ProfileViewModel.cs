@@ -624,6 +624,13 @@ public sealed partial class ProfileViewModel : ObservableObject
         if (Session is { IsRunning: false }) Session = null;
     }
 
+    [RelayCommand]
+    private async Task RestartAsAdministrator()
+    {
+        if (Session?.HasPermissionIssue != true || LastRun?.HasPermissionIssue != true) return;
+        await _main.OfferRestartAsAdministratorAsync(LastRun);
+    }
+
     /// <summary>Runs the profile in this process. Returns null when it was already running.</summary>
     public async Task<RunRecord?> StartAsync(bool dryRun, RunTrigger trigger)
     {
@@ -683,6 +690,10 @@ public sealed partial class ProfileViewModel : ObservableObject
         OnPropertyChanged(nameof(LastRunText));
         RefreshNextRun();
         _main.OnRunFinished(this, record);
+        if (trigger == RunTrigger.Manual && record.HasPermissionIssue)
+        {
+            await _main.OfferRestartAsAdministratorAsync(record);
+        }
         return record;
     }
 
