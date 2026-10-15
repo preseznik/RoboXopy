@@ -30,6 +30,13 @@ public static class FolderSafety
             .Any(source => Overlaps(normalizedDestination, source!));
     }
 
+    public static bool HasConfirmedHistoricalSourceDestination(SyncProfile profile)
+    {
+        var destination = NormalizeFolder(profile.Destination);
+        return destination is not null
+            && string.Equals(destination, profile.ConfirmedHistoricalSourceDestination, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static bool Overlaps(string first, string second) =>
         string.Equals(first, second, StringComparison.OrdinalIgnoreCase)
         || IsInside(first, second)

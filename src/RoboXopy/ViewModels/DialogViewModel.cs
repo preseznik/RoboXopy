@@ -21,6 +21,8 @@ public sealed partial class DialogViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(PrimaryCommand))]
     private string _confirmationText = "";
+    [ObservableProperty] private bool _canSkipFutureConfirmation;
+    [ObservableProperty] private bool _skipFutureConfirmation;
 
     public bool RequiresTextConfirmation => !string.IsNullOrEmpty(RequiredConfirmationText);
 
@@ -35,11 +37,19 @@ public sealed partial class DialogViewModel : ObservableObject
         IsDestructive = destructive;
         RequiredConfirmationText = null;
         ConfirmationText = "";
+        CanSkipFutureConfirmation = false;
+        SkipFutureConfirmation = false;
         IsOpen = true;
         return _completion.Task;
     }
 
-    public Task<bool> ShowTypedConfirmationAsync(string title, string message, string primaryText, string requiredText, bool destructive = true)
+    public Task<bool> ShowTypedConfirmationAsync(
+        string title,
+        string message,
+        string primaryText,
+        string requiredText,
+        bool destructive = true,
+        bool canSkipFutureConfirmation = false)
     {
         _completion?.TrySetResult(false);
         _completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -50,6 +60,8 @@ public sealed partial class DialogViewModel : ObservableObject
         IsDestructive = destructive;
         RequiredConfirmationText = requiredText;
         ConfirmationText = "";
+        CanSkipFutureConfirmation = canSkipFutureConfirmation;
+        SkipFutureConfirmation = false;
         IsOpen = true;
         return _completion.Task;
     }

@@ -504,6 +504,10 @@
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                 <TextBox x:Name="DialogConfirmation" Text="{Binding ConfirmationText, UpdateSourceTrigger=PropertyChanged}"
                                          Margin="0,8,0,0" AutomationProperties.Name="Confirmation text" />
+                                <CheckBox Content="Don't ask again for this destination in this profile"
+                                          Margin="0,12,0,0" IsChecked="{Binding SkipFutureConfirmation}"
+                                          Visibility="{Binding CanSkipFutureConfirmation, Converter={StaticResource BoolToVisibility}}"
+                                          AutomationProperties.Name="Skip future destination confirmation" />
                             </StackPanel>
                         </StackPanel>
                     </Border>

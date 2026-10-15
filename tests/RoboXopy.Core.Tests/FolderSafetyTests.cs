@@ -18,4 +18,18 @@ public sealed class FolderSafetyTests
     {
         Assert.False(FolderSafety.DestinationOverlapsSourceHistory(@"D:\backup", [@"D:\archives"]));
     }
+
+    [Fact]
+    public void ConfirmationOnlyAppliesToItsExactDestination()
+    {
+        var profile = new SyncProfile
+        {
+            Destination = @"D:\archives",
+            ConfirmedHistoricalSourceDestination = @"D:\archives",
+        };
+
+        Assert.True(FolderSafety.HasConfirmedHistoricalSourceDestination(profile));
+        profile.Destination = @"D:\archives\backup";
+        Assert.False(FolderSafety.HasConfirmedHistoricalSourceDestination(profile));
+    }
 }

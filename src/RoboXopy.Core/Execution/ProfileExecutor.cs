@@ -58,7 +58,8 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
 
         paths.EnsureCreated();
         if (FolderSafety.DestinationOverlapsSourceHistory(profile.Destination, appSettings.SourceFolderHistory)
-            && !request.ConfirmedHistoricalSourceDestination)
+            && !request.ConfirmedHistoricalSourceDestination
+            && !FolderSafety.HasConfirmedHistoricalSourceDestination(profile))
         {
             return Finish(record, RobocopyExitCode.StartFailed, RunOutcome.Error,
                 "The destination overlaps a folder previously used as a source. Run it interactively and type CONFIRM to continue.");

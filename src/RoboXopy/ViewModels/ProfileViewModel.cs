@@ -580,8 +580,8 @@ public sealed partial class ProfileViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task Run()
     {
+        if (!await _main.ConfirmHistoricalSourceDestinationAsync(Model, dryRun: false)) return;
         var snapshot = Snapshot();
-        if (!await _main.ConfirmHistoricalSourceDestinationAsync(snapshot, dryRun: false)) return;
 
         // Skipped (unreadable) folders aren't removed from the destination, so only the history-based warnings need a confirmation.
         var unusual = LastRun is { DryRun: true } preview
@@ -619,8 +619,7 @@ public sealed partial class ProfileViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task Preview()
     {
-        var snapshot = Snapshot();
-        if (!await _main.ConfirmHistoricalSourceDestinationAsync(snapshot, dryRun: true)) return;
+        if (!await _main.ConfirmHistoricalSourceDestinationAsync(Model, dryRun: true)) return;
         await StartAsync(dryRun: true, RunTrigger.Manual, confirmedHistoricalSourceDestination: true);
     }
 

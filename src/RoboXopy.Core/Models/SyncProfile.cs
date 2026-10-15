@@ -11,6 +11,8 @@ public sealed partial class SyncProfile : ObservableObject
     [ObservableProperty] private string _name = "New profile";
     [ObservableProperty] private string _source = "";
     [ObservableProperty] private string _destination = "";
+    /// <summary>Normalized risky destination explicitly acknowledged by the user, if it still matches <see cref="Destination"/>.</summary>
+    [ObservableProperty] private string? _confirmedHistoricalSourceDestination;
     [ObservableProperty] private int _sortOrder;
     [ObservableProperty] private RobocopyOptions _options = new();
     [ObservableProperty] private ScheduleSettings _schedule = new();

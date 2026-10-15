@@ -126,14 +126,25 @@ public sealed partial class MainViewModel : ObservableObject
 
     public async Task<bool> ConfirmHistoricalSourceDestinationAsync(SyncProfile profile, bool dryRun)
     {
-        if (!FolderSafety.DestinationOverlapsSourceHistory(profile.Destination, Host.Settings.SourceFolderHistory)) return true;
+        if (!FolderSafety.DestinationOverlapsSourceHistory(profile.Destination, Host.Settings.SourceFolderHistory)
+            || FolderSafety.HasConfirmedHistoricalSourceDestination(profile))
+        {
+            return true;
+        }
 
-        return await Dialog.ShowTypedConfirmationAsync(
+        var confirmed = await Dialog.ShowTypedConfirmationAsync(
             dryRun ? "Preview targets a previous source" : "Destination was used as a source",
             $"“{profile.Destination}” matches or overlaps a folder RoboXopy has previously used as a source. " +
             "This can overwrite files, and mirror or purge modes can delete them. Type CONFIRM to continue.",
             dryRun ? "Confirm preview" : "Confirm run",
-            "CONFIRM");
+            "CONFIRM",
+            canSkipFutureConfirmation: true);
+        if (confirmed && Dialog.SkipFutureConfirmation)
+        {
+            profile.ConfirmedHistoricalSourceDestination = FolderSafety.NormalizeFolder(profile.Destination);
+        }
+
+        return confirmed;
     }
 
     public void RememberSource(string? source)

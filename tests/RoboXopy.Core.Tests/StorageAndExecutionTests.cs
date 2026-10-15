@@ -26,6 +26,7 @@ public sealed class StorageAndExecutionTests : IDisposable
     {
         var store = new ProfileStore(_paths);
         var p = new SyncProfile { Name = "Photos", Source = @"C:\Photos", Destination = @"E:\Photos" };
+        p.ConfirmedHistoricalSourceDestination = @"E:\Photos";
         p.Options.Mode = CopyMode.Mirror;
         p.Options.ExcludeFiles.Add("*.tmp");
         p.Schedule.Enabled = true;
@@ -39,6 +40,7 @@ public sealed class StorageAndExecutionTests : IDisposable
         Assert.Equal(["*.tmp"], loaded.Options.ExcludeFiles);
         Assert.True(loaded.Schedule.Saturday);
         Assert.Equal(p.Schedule.Fingerprint(), loaded.Schedule.Fingerprint());
+        Assert.Equal(p.ConfirmedHistoricalSourceDestination, loaded.ConfirmedHistoricalSourceDestination);
         Assert.Equal(p.Id, store.Find(p.ShortId)?.Id);
         Assert.Equal(p.Id, store.Find("photos")?.Id);
         Assert.Null(store.Find("nothing"));
