@@ -1,0 +1,113 @@
+<Window x:Class="RoboXopy.Views.HistoryRunDetailWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="clr-namespace:RoboXopy.Controls"
+        xmlns:vm="clr-namespace:RoboXopy.ViewModels"
+        Title="{Binding Title}" Width="1060" Height="720" MinWidth="760" MinHeight="480"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="{Binding Title}" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Text="{Binding DetailText}" Style="{StaticResource SecondaryTextStyle}" Margin="0,2,0,0" />
+                <TextBlock Text="{Binding SummaryText}" Style="{StaticResource SecondaryTextStyle}" Margin="0,2,0,0" />
+            </StackPanel>
+            <Button Grid.Column="1" Command="{Binding OpenLogCommand}" Content="Open log" VerticalAlignment="Center"
+                    Visibility="{Binding HasLog, Converter={StaticResource BoolToVisibility}}" />
+        </Grid>
+
+        <StackPanel Grid.Row="1" Margin="0,16,0,12" Visibility="{Binding HasBreakdown, Converter={StaticResource BoolToVisibility}}">
+            <c:BreakdownBar Segments="{Binding Breakdown}" SelectedKind="{Binding SelectedBreakdownKind}" />
+            <ItemsControl ItemsSource="{Binding Breakdown}" Margin="0,8,0,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Style="{StaticResource AccentButtonStyle}" Padding="8,2" Margin="0,0,8,0"
+                                Command="{Binding DataContext.ToggleBreakdownFilterCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                CommandParameter="{Binding Kind}" IsEnabled="{Binding CanFilter}">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource BreakdownSwatchStyle}" />
+                                <TextBlock Margin="6,0,0,0">
+                                    <Run Text="{Binding CountText, Mode=OneWay}" />
+                                    <Run Text=" " /><Run Text="{Binding Label, Mode=OneWay}" />
+                                    <Run Text="{Binding BytesSuffix, Mode=OneWay}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <Grid Grid.Row="2" Background="{Binding OutputListBackground}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid Margin="12,8,12,4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Filter:" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ComboBox Margin="8,0,12,0" MinWidth="132" ItemsSource="{x:Static vm:HistoryRunDetailViewModel.OutputTypeFilters}"
+                              DisplayMemberPath="Label" SelectedItem="{Binding SelectedOutputTypeFilter}" />
+                    <TextBox Width="250" Padding="8,3" Text="{Binding OutputNameFilter, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="Filter by file or folder name" />
+                </StackPanel>
+                <Grid Grid.Row="1" Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="112" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Button Padding="0" HorizontalAlignment="Left" Background="Transparent" BorderThickness="0"
+                            Command="{Binding SortOutputCommand}" CommandParameter="{x:Static vm:OutputSortColumn.AdditionType}"><TextBlock Text="TYPE" FontSize="11" /></Button>
+                    <Button Grid.Column="1" Padding="0" HorizontalAlignment="Left" Background="Transparent" BorderThickness="0"
+                            Command="{Binding SortOutputCommand}" CommandParameter="{x:Static vm:OutputSortColumn.Name}"><TextBlock Text="NAME" FontSize="11" /></Button>
+                    <Button Grid.Column="2" Padding="0" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0"
+                            Command="{Binding SortOutputCommand}" CommandParameter="{x:Static vm:OutputSortColumn.Size}"><TextBlock Text="SIZE" FontSize="11" /></Button>
+                </Grid>
+            </Grid>
+            <ListBox Grid.Row="1" ItemsSource="{Binding FilteredEntries}" Style="{StaticResource BareListBoxStyle}"
+                     ItemContainerStyle="{StaticResource OutputListBoxItemStyle}" ScrollViewer.CanContentScroll="True"
+                     VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+                <ListBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate></ListBox.ItemsPanel>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid TextElement.FontFamily="{StaticResource MonoFont}" TextElement.FontSize="12" Margin="12,0,0,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="112" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding AdditionTypeText}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="2" Text="{Binding SizeText}" Margin="12,0,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <Border Grid.Row="2" Padding="12,8" Background="{DynamicResource ControlFillColorDefaultBrush}">
+                <StackPanel>
+                    <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                        <Run>Showing </Run><Run Text="{Binding FilteredEntriesDisplayCount, StringFormat=N0, Mode=OneWay}" FontWeight="SemiBold" />
+                        <Run> output rows totaling </Run><Run Text="{Binding FilteredEntriesBytesText, Mode=OneWay}" FontWeight="SemiBold" /><Run>.</Run>
+                    </TextBlock>
+                    <TextBlock Text="{Binding LoadError}" Margin="0,2,0,0" Foreground="{DynamicResource SystemFillColorCautionBrush}"
+                               Visibility="{Binding LoadError, Converter={StaticResource NullToVisibility}}" />
+                    <TextBlock Text="Loading saved output…" Margin="0,2,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

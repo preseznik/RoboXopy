@@ -880,12 +880,15 @@
                                                     <TextBlock Text="{Binding DetailText}" Style="{StaticResource SecondaryTextStyle}" HorizontalAlignment="Right"
                                                                TextWrapping="NoWrap" />
                                                 </StackPanel>
-                                                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center"
-                                                            Visibility="{Binding HasLog, Converter={StaticResource BoolToVisibility}}">
+                                                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Button Style="{StaticResource IconButtonStyle}" Content="&#xE81C;" Command="{Binding OpenDetailsCommand}"
+                                                            ToolTip="Open run details" AutomationProperties.Name="Open run details" />
                                                     <Button Style="{StaticResource IconButtonStyle}" Content="&#xE8A5;" Command="{Binding OpenLogCommand}"
-                                                            ToolTip="Open log" AutomationProperties.Name="Open log" />
+                                                            ToolTip="Open log" AutomationProperties.Name="Open log"
+                                                            Visibility="{Binding HasLog, Converter={StaticResource BoolToVisibility}}" />
                                                     <Button Style="{StaticResource IconButtonStyle}" Content="&#xE838;" Command="{Binding ShowLogInFolderCommand}"
-                                                            ToolTip="Show log in folder" AutomationProperties.Name="Show log in folder" />
+                                                            ToolTip="Show log in folder" AutomationProperties.Name="Show log in folder"
+                                                            Visibility="{Binding HasLog, Converter={StaticResource BoolToVisibility}}" />
                                                 </StackPanel>
                                             </Grid>
                                         </Border>

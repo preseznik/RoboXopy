@@ -1,9 +1,11 @@
 using System.Diagnostics;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RoboXopy.Core.Models;
 using RoboXopy.Core.Scheduling;
 using RoboXopy.Infrastructure;
+using RoboXopy.Views;
 
 namespace RoboXopy.ViewModels;
 
@@ -43,6 +45,16 @@ public sealed partial class HistoryItemViewModel(RunRecord record) : ObservableO
     private void OpenLog()
     {
         if (HasLog) Shell.Open(Record.LogFile!);
+    }
+
+    [RelayCommand]
+    private void OpenDetails()
+    {
+        var window = new HistoryRunDetailWindow(new HistoryRunDetailViewModel(Record))
+        {
+            Owner = Application.Current.MainWindow,
+        };
+        window.Show();
     }
 
     [RelayCommand]
