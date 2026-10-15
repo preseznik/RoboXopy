@@ -499,6 +499,12 @@
                         <StackPanel>
                             <TextBlock Text="{Binding Title}" Style="{StaticResource SubtitleTextBlockStyle}" FontSize="20" TextWrapping="Wrap" />
                             <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Margin="0,12,0,0" />
+                            <StackPanel Margin="0,16,0,0" Visibility="{Binding RequiresTextConfirmation, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="{Binding RequiredConfirmationText, StringFormat='Type {0} to continue.'}"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <TextBox x:Name="DialogConfirmation" Text="{Binding ConfirmationText, UpdateSourceTrigger=PropertyChanged}"
+                                         Margin="0,8,0,0" AutomationProperties.Name="Confirmation text" />
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                     <Grid Grid.Row="1" Margin="24">

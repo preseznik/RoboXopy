@@ -158,7 +158,11 @@ public partial class MainWindow : Window
     {
         if (e.NewValue is true)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Input, () => DialogPrimary.Focus());
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                if (_main.Dialog.RequiresTextConfirmation) DialogConfirmation.Focus();
+                else DialogPrimary.Focus();
+            });
         }
         else if (ProfileList.SelectedItem is not null && ProfileList.ItemContainerGenerator.ContainerFromItem(ProfileList.SelectedItem) is UIElement item)
         {

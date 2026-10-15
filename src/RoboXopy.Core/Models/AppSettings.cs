@@ -27,6 +27,8 @@ public sealed partial class AppSettings : ObservableObject
     [ObservableProperty] private Guid? _lastSelectedProfileId;
     [ObservableProperty] private bool _trayHintShown;
     [ObservableProperty] private bool _skipProfileWizard;
+    /// <summary>Folders that have ever been used as a source, retained after profiles are changed or deleted.</summary>
+    [ObservableProperty] private IReadOnlyList<string> _sourceFolderHistory = [];
 
     public string ResolveRobocopyPath() =>
         string.IsNullOrWhiteSpace(RobocopyPath)

@@ -8,7 +8,7 @@ using RoboXopy.Core.Storage;
 
 namespace RoboXopy.Core.Execution;
 
-public sealed record RunRequest(SyncProfile Profile, RunTrigger Trigger, bool DryRun = false);
+public sealed record RunRequest(SyncProfile Profile, RunTrigger Trigger, bool DryRun = false, bool ConfirmedHistoricalSourceDestination = false);
 
 /// <summary>
 /// Runs a profile end to end: cross-process locking, validation, robocopy execution, log file,
@@ -57,6 +57,13 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
         };
 
         paths.EnsureCreated();
+        if (FolderSafety.DestinationOverlapsSourceHistory(profile.Destination, appSettings.SourceFolderHistory)
+            && !request.ConfirmedHistoricalSourceDestination)
+        {
+            return Finish(record, RobocopyExitCode.StartFailed, RunOutcome.Error,
+                "The destination overlaps a folder previously used as a source. Run it interactively and type CONFIRM to continue.");
+        }
+
         using var runLock = TryAcquireLock(profile.Id);
         if (runLock is null)
         {

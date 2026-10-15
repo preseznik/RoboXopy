@@ -45,6 +45,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         foreach (var profile in Host.Profiles.LoadAll().OrderBy(p => p.SortOrder).ThenBy(p => p.CreatedAt))
         {
+            RememberSource(profile.Source);
             Profiles.Add(CreateViewModel(profile));
         }
 
@@ -122,6 +123,30 @@ public sealed partial class MainViewModel : ObservableObject
         Dialog.ShowAsync(title, message, confirmText, "Cancel", destructive);
 
     public Task AlertAsync(string title, string message) => Dialog.ShowAsync(title, message, "OK", null);
+
+    public async Task<bool> ConfirmHistoricalSourceDestinationAsync(SyncProfile profile, bool dryRun)
+    {
+        if (!FolderSafety.DestinationOverlapsSourceHistory(profile.Destination, Host.Settings.SourceFolderHistory)) return true;
+
+        return await Dialog.ShowTypedConfirmationAsync(
+            dryRun ? "Preview targets a previous source" : "Destination was used as a source",
+            $"“{profile.Destination}” matches or overlaps a folder RoboXopy has previously used as a source. " +
+            "This can overwrite files, and mirror or purge modes can delete them. Type CONFIRM to continue.",
+            dryRun ? "Confirm preview" : "Confirm run",
+            "CONFIRM");
+    }
+
+    public void RememberSource(string? source)
+    {
+        var normalized = FolderSafety.NormalizeFolder(source);
+        if (normalized is null || Host.Settings.SourceFolderHistory.Any(item =>
+                string.Equals(FolderSafety.NormalizeFolder(item), normalized, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        Host.Settings.SourceFolderHistory = [.. Host.Settings.SourceFolderHistory, normalized];
+    }
 
     public async Task OfferRestartAsAdministratorAsync(RunRecord record)
     {
@@ -469,6 +494,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private ProfileViewModel Add(SyncProfile profile, int index)
     {
+        RememberSource(profile.Source);
         try
         {
             Host.Profiles.Save(profile);

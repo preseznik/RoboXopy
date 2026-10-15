@@ -313,6 +313,7 @@ public sealed partial class ProfileViewModel : ObservableObject
     private void OnModelChanged(object? sender, string property)
     {
         if (_deleted) return;
+        if (property == nameof(SyncProfile.Source)) _main.RememberSource(Model.Source);
         _saveTimer.Stop();
         _saveTimer.Start();
 
@@ -579,9 +580,12 @@ public sealed partial class ProfileViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task Run()
     {
+        var snapshot = Snapshot();
+        if (!await _main.ConfirmHistoricalSourceDestinationAsync(snapshot, dryRun: false)) return;
+
         // Skipped (unreadable) folders aren't removed from the destination, so only the history-based warnings need a confirmation.
         var unusual = LastRun is { DryRun: true } preview
-                      && preview.CommandLine == RobocopyCommandBuilder.BuildCommandLine(Snapshot(), dryRun: true)
+                      && preview.CommandLine == RobocopyCommandBuilder.BuildCommandLine(snapshot, dryRun: true)
             ? preview.Findings?.Where(f => f.Severity == FindingSeverity.Warning && f.Kind != RunFindingKind.UnreadableFolders).ToList()
             : null;
         if (unusual is { Count: > 0 })
@@ -609,11 +613,16 @@ public sealed partial class ProfileViewModel : ObservableObject
             if (!ok) return;
         }
 
-        await StartAsync(dryRun: false, RunTrigger.Manual);
+        await StartAsync(dryRun: false, RunTrigger.Manual, confirmedHistoricalSourceDestination: true);
     }
 
     [RelayCommand(CanExecute = nameof(CanRun))]
-    private Task Preview() => StartAsync(dryRun: true, RunTrigger.Manual);
+    private async Task Preview()
+    {
+        var snapshot = Snapshot();
+        if (!await _main.ConfirmHistoricalSourceDestinationAsync(snapshot, dryRun: true)) return;
+        await StartAsync(dryRun: true, RunTrigger.Manual, confirmedHistoricalSourceDestination: true);
+    }
 
     [RelayCommand(CanExecute = nameof(CanStop))]
     private void Stop() => Session?.CancelCommand.Execute(null);
@@ -632,7 +641,7 @@ public sealed partial class ProfileViewModel : ObservableObject
     }
 
     /// <summary>Runs the profile in this process. Returns null when it was already running.</summary>
-    public async Task<RunRecord?> StartAsync(bool dryRun, RunTrigger trigger)
+    public async Task<RunRecord?> StartAsync(bool dryRun, RunTrigger trigger, bool confirmedHistoricalSourceDestination = false)
     {
         if (IsRunning) return null;
         FlushSave();
@@ -650,7 +659,8 @@ public sealed partial class ProfileViewModel : ObservableObject
         try
         {
             var executor = _host.Executor;
-            record = await Task.Run(() => executor.ExecuteAsync(new RunRequest(snapshot, trigger, dryRun), session.Post, session.Cancellation.Token));
+            record = await Task.Run(() => executor.ExecuteAsync(
+                new RunRequest(snapshot, trigger, dryRun, confirmedHistoricalSourceDestination), session.Post, session.Cancellation.Token));
         }
         catch (Exception ex)
         {

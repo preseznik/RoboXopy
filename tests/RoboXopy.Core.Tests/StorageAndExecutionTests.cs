@@ -200,4 +200,21 @@ public sealed class StorageAndExecutionTests : IDisposable
 
         Assert.False(executor.IsRunningAnywhere(profile.Id));
     }
+
+    [Fact]
+    public async Task Executor_BlocksHistoricalSourceDestinationWithoutConfirmation()
+    {
+        var source = Directory.CreateDirectory(Path.Combine(_root, "source")).FullName;
+        var previousSource = Directory.CreateDirectory(Path.Combine(_root, "previous-source")).FullName;
+        var profile = new SyncProfile { Source = source, Destination = previousSource };
+        var settings = new AppSettings { SourceFolderHistory = [previousSource] };
+        var executor = new ProfileExecutor(_paths, new HistoryStore(_paths), () => settings);
+
+        var blocked = await executor.ExecuteAsync(new RunRequest(profile, RunTrigger.Scheduled));
+        Assert.Equal(RunOutcome.Error, blocked.Outcome);
+        Assert.Contains("previously used as a source", blocked.Message);
+
+        var allowed = await executor.ExecuteAsync(new RunRequest(profile, RunTrigger.Manual, DryRun: true, ConfirmedHistoricalSourceDestination: true));
+        Assert.NotEqual(RunOutcome.Error, allowed.Outcome);
+    }
 }
