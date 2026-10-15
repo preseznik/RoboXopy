@@ -68,6 +68,12 @@
                               DisplayMemberPath="Label" SelectedItem="{Binding SelectedOutputTypeFilter}" />
                     <TextBox Width="250" Padding="8,3" Text="{Binding OutputNameFilter, UpdateSourceTrigger=PropertyChanged}"
                              ToolTip="Filter by file or folder name" />
+                    <Button Margin="8,0,0,0" MinWidth="32" Padding="6,3"
+                            Command="{Binding ToggleOutputSortDirectionCommand}"
+                            ToolTip="{Binding OutputSortDirectionToolTip}"
+                            AutomationProperties.Name="Toggle output sort direction">
+                        <TextBlock Text="{Binding OutputSortDirectionIcon}" FontSize="16" />
+                    </Button>
                 </StackPanel>
                 <Grid Grid.Row="1" Margin="0,6,0,0">
                     <Grid.ColumnDefinitions>

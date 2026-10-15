@@ -1164,6 +1164,12 @@
                                     </Style>
                                 </TextBox.Style>
                             </TextBox>
+                            <Button Margin="8,0,0,0" MinWidth="32" Padding="6,3"
+                                    Command="{Binding ToggleOutputSortDirectionCommand}"
+                                    ToolTip="{Binding OutputSortDirectionToolTip}"
+                                    AutomationProperties.Name="Toggle output sort direction">
+                                <TextBlock Text="{Binding OutputSortDirectionIcon}" FontSize="16" />
+                            </Button>
                         </StackPanel>
                         <Grid Grid.Row="1" Margin="0,6,0,0">
                             <Grid.ColumnDefinitions>
@@ -1173,17 +1179,17 @@
                             </Grid.ColumnDefinitions>
                             <Button HorizontalAlignment="Left" Padding="0" Background="Transparent" BorderThickness="0"
                                     Command="{Binding SortOutputCommand}" CommandParameter="{x:Static vm:OutputSortColumn.AdditionType}"
-                                    ToolTip="Sort by addition type; click again to reverse">
+                                    ToolTip="Sort by addition type">
                                 <TextBlock Text="TYPE" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                             </Button>
                             <Button Grid.Column="1" HorizontalAlignment="Left" Padding="0" Background="Transparent" BorderThickness="0"
                                     Command="{Binding SortOutputCommand}" CommandParameter="{x:Static vm:OutputSortColumn.Name}"
-                                    ToolTip="Sort by name; click again to reverse">
+                                    ToolTip="Sort by name">
                                 <TextBlock Text="NAME" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                             </Button>
                             <Button Grid.Column="2" HorizontalAlignment="Right" Padding="0" Background="Transparent" BorderThickness="0"
                                     Command="{Binding SortOutputCommand}" CommandParameter="{x:Static vm:OutputSortColumn.Size}"
-                                    ToolTip="Sort by size; click again to reverse">
+                                    ToolTip="Sort by size">
                                 <TextBlock Text="SIZE" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                             </Button>
                         </Grid>

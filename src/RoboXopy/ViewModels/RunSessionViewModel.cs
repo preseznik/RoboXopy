@@ -182,6 +182,8 @@ public sealed partial class RunSessionViewModel : ObservableObject
     public bool HasFilteredOutputLimitNotice =>
         SelectedBreakdownKind is { } kind ? _trimmedBreakdownEntries.Contains(kind) : Trimmed;
     public string FilteredEntriesBytesText => RunFormatting.FormatBytes(FilteredEntriesByteCount);
+    public string OutputSortDirectionIcon => IsOutputSortDescending ? "↓" : "↑";
+    public string OutputSortDirectionToolTip => IsOutputSortDescending ? "Descending; click for ascending" : "Ascending; click for descending";
     public Brush? OutputListBackground => SelectedBreakdownKind switch
     {
         BreakdownKind.Unchanged => new SolidColorBrush(Color.FromArgb(20, 128, 128, 128)),
@@ -196,6 +198,11 @@ public sealed partial class RunSessionViewModel : ObservableObject
     partial void OnTrimmedChanged(bool value) => OnPropertyChanged(nameof(HasFilteredOutputLimitNotice));
     partial void OnOutputNameFilterChanged(string value) => RefreshFilteredEntries();
     partial void OnSelectedOutputTypeFilterChanged(OutputTypeFilter value) => RefreshFilteredEntries();
+    partial void OnIsOutputSortDescendingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(OutputSortDirectionIcon));
+        OnPropertyChanged(nameof(OutputSortDirectionToolTip));
+    }
 
     private void RefreshFilteredEntries()
     {
@@ -284,8 +291,14 @@ public sealed partial class RunSessionViewModel : ObservableObject
     [RelayCommand]
     private void SortOutput(OutputSortColumn column)
     {
-        IsOutputSortDescending = SelectedOutputSortColumn == column && !IsOutputSortDescending;
         SelectedOutputSortColumn = column;
+        RefreshFilteredEntries();
+    }
+
+    [RelayCommand]
+    private void ToggleOutputSortDirection()
+    {
+        IsOutputSortDescending = !IsOutputSortDescending;
         RefreshFilteredEntries();
     }
 

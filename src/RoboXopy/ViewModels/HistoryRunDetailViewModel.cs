@@ -59,6 +59,8 @@ public sealed partial class HistoryRunDetailViewModel : ObservableObject
         _ => null,
     };
     public string FilteredEntriesBytesText => RunFormatting.FormatBytes(FilteredEntriesByteCount);
+    public string OutputSortDirectionIcon => IsOutputSortDescending ? "↓" : "↑";
+    public string OutputSortDirectionToolTip => IsOutputSortDescending ? "Descending; click for ascending" : "Ascending; click for descending";
 
     partial void OnSelectedBreakdownKindChanged(BreakdownKind? value)
     {
@@ -70,6 +72,11 @@ public sealed partial class HistoryRunDetailViewModel : ObservableObject
     partial void OnOutputNameFilterChanged(string value) => RefreshFilteredEntries();
     partial void OnSelectedOutputTypeFilterChanged(OutputTypeFilter value) => RefreshFilteredEntries();
     partial void OnFilteredEntriesByteCountChanged(long value) => OnPropertyChanged(nameof(FilteredEntriesBytesText));
+    partial void OnIsOutputSortDescendingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(OutputSortDirectionIcon));
+        OnPropertyChanged(nameof(OutputSortDirectionToolTip));
+    }
 
     public async Task LoadAsync()
     {
@@ -111,8 +118,14 @@ public sealed partial class HistoryRunDetailViewModel : ObservableObject
     [RelayCommand]
     private void SortOutput(OutputSortColumn column)
     {
-        IsOutputSortDescending = SelectedOutputSortColumn == column && !IsOutputSortDescending;
         SelectedOutputSortColumn = column;
+        RefreshFilteredEntries();
+    }
+
+    [RelayCommand]
+    private void ToggleOutputSortDirection()
+    {
+        IsOutputSortDescending = !IsOutputSortDescending;
         RefreshFilteredEntries();
     }
 
