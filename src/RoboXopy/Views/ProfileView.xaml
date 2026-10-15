@@ -1264,7 +1264,7 @@
                                        Visibility="{Binding HasFilteredOutputLimitNotice, Converter={StaticResource BoolToVisibility}}">
                                 <Run>Only the most recent</Run>
                                 <Run Text="{Binding OutputRetentionLimitText, Mode=OneWay}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
-                                <Run>output rows are retained.</Run>
+                                <Run>output rows per category are retained.</Run>
                             </TextBlock>
                         </StackPanel>
                     </Border>

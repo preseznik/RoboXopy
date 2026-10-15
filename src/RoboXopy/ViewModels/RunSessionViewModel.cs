@@ -89,12 +89,22 @@ public sealed partial class RunSessionViewModel : ObservableObject
     private readonly ConcurrentQueue<OutputLine> _pending = new();
     private readonly DispatcherTimer _timer;
     private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
+    private readonly bool _purgesExtras;
+    private readonly Dictionary<BreakdownKind, List<OutputEntry>> _breakdownEntries = new()
+    {
+        [BreakdownKind.Unchanged] = [],
+        [BreakdownKind.Copied] = [],
+        [BreakdownKind.Removed] = [],
+        [BreakdownKind.Kept] = [],
+    };
+    private readonly HashSet<BreakdownKind> _trimmedBreakdownEntries = [];
 
     public RunSessionViewModel(bool dryRun, RunTrigger trigger, string commandLine, bool purgesExtras = false)
     {
         DryRun = dryRun;
         Trigger = trigger;
         CommandLine = commandLine;
+        _purgesExtras = purgesExtras;
         ExtrasLabel = !purgesExtras ? "extra" : dryRun ? "to remove" : "removed";
         StartedAt = DateTime.Now;
         _timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(100) };
@@ -168,7 +178,8 @@ public sealed partial class RunSessionViewModel : ObservableObject
     public bool HasBreakdown => Breakdown is { Count: > 0 };
     public bool HasFindings => !string.IsNullOrEmpty(FindingsText);
     public bool IsBreakdownFilterActive => SelectedBreakdownKind is not null;
-    public bool HasFilteredOutputLimitNotice => Trimmed;
+    public bool HasFilteredOutputLimitNotice =>
+        SelectedBreakdownKind is { } kind ? _trimmedBreakdownEntries.Contains(kind) : Trimmed;
     public string FilteredEntriesBytesText => RunFormatting.FormatBytes(FilteredEntriesByteCount);
     public Brush? OutputListBackground => SelectedBreakdownKind switch
     {
@@ -187,18 +198,21 @@ public sealed partial class RunSessionViewModel : ObservableObject
 
     private void RefreshFilteredEntries()
     {
+        IReadOnlyList<OutputEntry> sourceEntries = SelectedBreakdownKind is { } kind
+            ? _breakdownEntries.GetValueOrDefault(kind, [])
+            : Entries;
+
         IReadOnlyList<OutputEntry> displayedEntries;
         if (SelectedBreakdownKind is null
             && SelectedOutputTypeFilter.Type is null
             && string.IsNullOrWhiteSpace(OutputNameFilter)
             && SelectedOutputSortColumn is null)
         {
-            displayedEntries = Entries;
+            displayedEntries = sourceEntries;
         }
         else
         {
-            IEnumerable<OutputEntry> entries = Entries;
-            if (SelectedBreakdownKind is { } kind) entries = entries.Where(entry => EntryMatchesKind(entry, kind));
+            IEnumerable<OutputEntry> entries = sourceEntries;
             if (SelectedOutputTypeFilter.Type is { } type) entries = entries.Where(entry => entry.AdditionType == type);
             if (!string.IsNullOrWhiteSpace(OutputNameFilter))
             {
@@ -235,6 +249,29 @@ public sealed partial class RunSessionViewModel : ObservableObject
             entry.IsExtra && entry.Kind is OutputLineKind.File or OutputLineKind.Directory,
         _ => false,
     };
+
+    private void AddBreakdownEntry(OutputEntry entry)
+    {
+        if (GetBreakdownKind(entry) is not { } kind) return;
+
+        var entries = _breakdownEntries[kind];
+        entries.Add(entry);
+        if (entries.Count <= MaxEntries) return;
+
+        entries.RemoveRange(0, Math.Max(TrimCount, entries.Count - MaxEntries));
+        _trimmedBreakdownEntries.Add(kind);
+        OnPropertyChanged(nameof(HasFilteredOutputLimitNotice));
+    }
+
+    private BreakdownKind? GetBreakdownKind(OutputEntry entry)
+    {
+        if (entry.Kind == OutputLineKind.File && IsUnchanged(entry.Status)) return BreakdownKind.Unchanged;
+        if (entry.IsExtra && entry.Kind is OutputLineKind.File or OutputLineKind.Directory)
+        {
+            return _purgesExtras ? BreakdownKind.Removed : BreakdownKind.Kept;
+        }
+        return entry.Kind == OutputLineKind.File ? BreakdownKind.Copied : null;
+    }
 
     public string BytesText => RunFormatting.FormatBytes(ByteCount);
     public string FilesLabel => DryRun ? "to copy" : "copied";
@@ -412,7 +449,11 @@ public sealed partial class RunSessionViewModel : ObservableObject
             Trimmed = true;
         }
 
-        foreach (var entry in visible) Entries.Add(entry);
+        foreach (var entry in visible)
+        {
+            Entries.Add(entry);
+            AddBreakdownEntry(entry);
+        }
         RefreshFilteredEntries();
     }
 
