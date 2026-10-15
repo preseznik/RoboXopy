@@ -1056,8 +1056,7 @@
 
                 <!-- Breakdown: what happened (or would happen) to the files -->
                 <StackPanel Grid.Row="2" Margin="32,4,24,10" Visibility="{Binding HasBreakdown, Converter={StaticResource BoolToVisibility}}">
-                    <c:BreakdownBar Segments="{Binding Breakdown}" SelectedKind="{Binding SelectedBreakdownKind}"
-                                    SegmentClickedCommand="{Binding ToggleBreakdownFilterCommand}" />
+                    <c:BreakdownBar Segments="{Binding Breakdown}" SelectedKind="{Binding SelectedBreakdownKind}" />
                     <ItemsControl ItemsSource="{Binding Breakdown}" Margin="0,8,0,0" Focusable="False" IsTabStop="False">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -1066,12 +1065,18 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                                    <Border Style="{StaticResource BreakdownSwatchStyle}" />
-                                    <TextBlock Style="{StaticResource LegendTextStyle}">
-                                        <Run Text="{Binding CountText, Mode=OneWay}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                        <Run Text="{Binding Label, Mode=OneWay}" /><Run Text="{Binding BytesSuffix, Mode=OneWay}" />
-                                    </TextBlock>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,12,2">
+                                    <Button Style="{StaticResource AccentButtonStyle}" Padding="0" Width="Auto" Height="24"
+                                            Command="{Binding DataContext.ToggleBreakdownFilterCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding Kind}">
+                                        <StackPanel Orientation="Horizontal" Margin="8,0">
+                                            <Border Style="{StaticResource BreakdownSwatchStyle}" />
+                                            <TextBlock Style="{StaticResource LegendTextStyle}" Margin="6,0,0,0">
+                                                <Run Text="{Binding CountText, Mode=OneWay}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                <Run Text="{Binding Label, Mode=OneWay}" /><Run Text="{Binding BytesSuffix, Mode=OneWay}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Button>
                                 </StackPanel>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
