@@ -1188,6 +1188,18 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
+
+                <!-- Notification when filtered results exceed display limit -->
+                <Border Grid.Row="5" VerticalAlignment="Bottom" Padding="16,8" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        Visibility="{Binding FilteredEntriesExceedDisplay, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                        <Run>Showing</Run>
+                        <Run Text="{Binding FilteredEntries.Count, StringFormat=N0}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
+                        <Run>of</Run>
+                        <Run Text="{Binding FilteredEntriesTotal, StringFormat=N0}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
+                        <Run>matching files. Output is limited to 5,000 entries.</Run>
+                    </TextBlock>
+                </Border>
             </Grid>
         </Border>
     </Grid>

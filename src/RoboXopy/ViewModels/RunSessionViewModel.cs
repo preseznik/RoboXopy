@@ -95,6 +95,8 @@ public sealed partial class RunSessionViewModel : ObservableObject
     /// <summary>The breakdown category currently selected for filtering the file list, or null to show all entries.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FilteredEntries))]
+    [NotifyPropertyChangedFor(nameof(FilteredEntriesTotal))]
+    [NotifyPropertyChangedFor(nameof(FilteredEntriesExceedDisplay))]
     private BreakdownKind? _selectedBreakdownKind;
 
     /// <summary>Unusual things about the run compared with the profile's history, one per line.</summary>
@@ -116,6 +118,27 @@ public sealed partial class RunSessionViewModel : ObservableObject
         {
             if (SelectedBreakdownKind is not { } kind) return Entries;
             return Entries.Where(e => EntryMatchesKind(e, kind)).ToList();
+        }
+    }
+
+    /// <summary>Total count of entries matching the selected breakdown kind (including those not displayed due to MaxEntries limit).</summary>
+    public long FilteredEntriesTotal
+    {
+        get
+        {
+            if (SelectedBreakdownKind is not { } kind) return Entries.Count;
+            var segment = Breakdown?.FirstOrDefault(s => s.Kind == kind);
+            return segment?.Count ?? 0;
+        }
+    }
+
+    /// <summary>True if filtering is active and there are more results than displayed.</summary>
+    public bool FilteredEntriesExceedDisplay
+    {
+        get
+        {
+            if (SelectedBreakdownKind is null) return false;
+            return FilteredEntriesTotal > FilteredEntries.Count;
         }
     }
 
