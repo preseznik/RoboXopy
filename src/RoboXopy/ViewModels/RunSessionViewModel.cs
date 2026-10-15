@@ -94,7 +94,8 @@ public sealed partial class RunSessionViewModel : ObservableObject
 
     /// <summary>The breakdown category currently selected for filtering the file list, or null to show all entries.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(FilteredEntries))]
+    [NotifyPropertyChangedFor(nameof(IsBreakdownFilterActive))]
+    [NotifyPropertyChangedFor(nameof(HasFilteredOutputLimitNotice))]
     private BreakdownKind? _selectedBreakdownKind;
 
     /// <summary>Unusual things about the run compared with the profile's history, one per line.</summary>
@@ -105,52 +106,39 @@ public sealed partial class RunSessionViewModel : ObservableObject
     [ObservableProperty] private bool _hasWarningFindings;
     [ObservableProperty] private bool _isResultRedundant;
     [ObservableProperty] private string _findingsTitle = "";
-    
+
+    [ObservableProperty] private IReadOnlyList<OutputEntry> _filteredEntries = [];
     [ObservableProperty] private long _filteredEntriesDisplayCount;
     [ObservableProperty] private long _filteredEntriesTotalCount;
 
     public bool HasBreakdown => Breakdown is { Count: > 0 };
     public bool HasFindings => !string.IsNullOrEmpty(FindingsText);
-    public bool FilteredEntriesExceedDisplay => SelectedBreakdownKind is not null && FilteredEntriesTotalCount > FilteredEntriesDisplayCount;
+    public bool IsBreakdownFilterActive => SelectedBreakdownKind is not null;
+    public bool HasFilteredOutputLimitNotice => IsBreakdownFilterActive && Trimmed;
 
-    /// <summary>Returns entries filtered by the selected breakdown kind, or all entries if no kind is selected.</summary>
-    public IReadOnlyList<OutputEntry> FilteredEntries
-    {
-        get
-        {
-            if (SelectedBreakdownKind is not { } kind)
-            {
-                UpdateFilteredEntriesCounts();
-                return Entries;
-            }
-            var filtered = Entries.Where(e => EntryMatchesKind(e, kind)).ToList();
-            UpdateFilteredEntriesCounts(filtered);
-            return filtered;
-        }
-    }
+    partial void OnSelectedBreakdownKindChanged(BreakdownKind? value) => RefreshFilteredEntries();
+    partial void OnBreakdownChanged(IReadOnlyList<BreakdownSegment>? value) => RefreshFilteredEntries();
+    partial void OnTrimmedChanged(bool value) => OnPropertyChanged(nameof(HasFilteredOutputLimitNotice));
 
-    private void UpdateFilteredEntriesCounts(IReadOnlyList<OutputEntry>? filtered = null)
+    private void RefreshFilteredEntries()
     {
-        if (SelectedBreakdownKind is not { } kind)
-        {
-            FilteredEntriesDisplayCount = Entries.Count;
-            FilteredEntriesTotalCount = Entries.Count;
-            return;
-        }
-        
-        var displayed = filtered?.Count ?? 0;
-        var segment = Breakdown?.FirstOrDefault(s => s.Kind == kind);
-        var total = segment?.Count ?? 0;
-        
-        FilteredEntriesDisplayCount = displayed;
-        FilteredEntriesTotalCount = total;
+        var entries = SelectedBreakdownKind is { } kind
+            ? Entries.Where(entry => EntryMatchesKind(entry, kind)).ToList()
+            : Entries.ToList();
+
+        FilteredEntries = entries;
+        FilteredEntriesDisplayCount = entries.Count;
+        FilteredEntriesTotalCount = SelectedBreakdownKind is { } selectedKind
+            ? Breakdown?.FirstOrDefault(segment => segment.Kind == selectedKind)?.Count ?? 0
+            : entries.Count;
     }
 
     private static bool EntryMatchesKind(OutputEntry entry, BreakdownKind kind) => kind switch
     {
         BreakdownKind.Unchanged => entry.Kind == OutputLineKind.File && IsUnchanged(entry.Status),
         BreakdownKind.Copied => entry.Kind == OutputLineKind.File && !entry.IsExtra && !IsUnchanged(entry.Status),
-        BreakdownKind.Removed => entry.Kind == OutputLineKind.File && entry.IsExtra,
+        BreakdownKind.Removed or BreakdownKind.Kept =>
+            entry.IsExtra && entry.Kind is OutputLineKind.File or OutputLineKind.Directory,
         _ => false,
     };
 
@@ -193,6 +181,7 @@ public sealed partial class RunSessionViewModel : ObservableObject
         if (record.Outcome is RunOutcome.Error or RunOutcome.Skipped && !string.IsNullOrEmpty(record.Message))
         {
             Entries.Add(new OutputEntry(OutputLineKind.Error, record.Message));
+            RefreshFilteredEntries();
         }
 
         // A success message only restates the exit code (copied / removed / in sync), which the breakdown already shows.
@@ -242,6 +231,8 @@ public sealed partial class RunSessionViewModel : ObservableObject
     [RelayCommand]
     private void ToggleBreakdownFilter(BreakdownKind kind)
     {
+        if (kind is not (BreakdownKind.Unchanged or BreakdownKind.Copied or BreakdownKind.Removed or BreakdownKind.Kept)) return;
+
         // Clicking the same category again toggles it off; clicking a different one selects it.
         SelectedBreakdownKind = SelectedBreakdownKind == kind ? null : kind;
     }
@@ -319,6 +310,7 @@ public sealed partial class RunSessionViewModel : ObservableObject
         }
 
         foreach (var entry in visible) Entries.Add(entry);
+        RefreshFilteredEntries();
     }
 
     private static bool IsUnchanged(string? status) =>

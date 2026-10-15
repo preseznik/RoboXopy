@@ -1068,7 +1068,8 @@
                                 <StackPanel Orientation="Horizontal" Margin="0,0,12,2">
                                     <Button Style="{StaticResource AccentButtonStyle}" Padding="0" Width="Auto" Height="24"
                                             Command="{Binding DataContext.ToggleBreakdownFilterCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                            CommandParameter="{Binding Kind}">
+                                            CommandParameter="{Binding Kind}"
+                                            IsEnabled="{Binding CanFilter}">
                                         <StackPanel Orientation="Horizontal" Margin="8,0">
                                             <Border Style="{StaticResource BreakdownSwatchStyle}" />
                                             <TextBlock Style="{StaticResource LegendTextStyle}" Margin="6,0,0,0">
@@ -1189,16 +1190,21 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
 
-                <!-- Notification when filtered results exceed display limit -->
+                <!-- A robocopy summary counts files, while the output can also contain directory records. -->
                 <Border Grid.Row="5" VerticalAlignment="Bottom" Padding="16,8" Background="{DynamicResource ControlFillColorDefaultBrush}"
-                        Visibility="{Binding FilteredEntriesExceedDisplay, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                        <Run>Showing</Run>
-                        <Run Text="{Binding FilteredEntriesDisplayCount, StringFormat=N0}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
-                        <Run>of</Run>
-                        <Run Text="{Binding FilteredEntriesTotalCount, StringFormat=N0}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
-                        <Run>matching files. Output is limited to 5,000 entries.</Run>
-                    </TextBlock>
+                        Visibility="{Binding IsBreakdownFilterActive, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel>
+                        <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                            <Run>Showing</Run>
+                            <Run Text="{Binding FilteredEntriesDisplayCount, StringFormat=N0}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
+                            <Run>matching output rows. Robocopy summary reports</Run>
+                            <Run Text="{Binding FilteredEntriesTotalCount, StringFormat=N0}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" />
+                            <Run>files.</Run>
+                        </TextBlock>
+                        <TextBlock Margin="0,2,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Text="Only the most recent 5,000 output rows are retained."
+                                   Visibility="{Binding HasFilteredOutputLimitNotice, Converter={StaticResource BoolToVisibility}}" />
+                    </StackPanel>
                 </Border>
             </Grid>
         </Border>

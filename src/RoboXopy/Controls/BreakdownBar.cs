@@ -22,6 +22,7 @@ public sealed record BreakdownSegment(BreakdownKind Kind, long Count, long Bytes
     public string? BytesText => Bytes > 0 ? RunFormatting.FormatBytes(Bytes) : null;
     public string BytesSuffix => Bytes > 0 ? " · " + RunFormatting.FormatBytes(Bytes) : string.Empty;
     public bool HasBytes => Bytes > 0;
+    public bool CanFilter => Kind is BreakdownKind.Unchanged or BreakdownKind.Copied or BreakdownKind.Removed or BreakdownKind.Kept;
 }
 
 /// <summary>
@@ -165,4 +166,3 @@ public sealed class BreakdownBar : FrameworkElement
     private static DependencyProperty RegisterBrush(string name) => DependencyProperty.Register(
         name, typeof(Brush), typeof(BreakdownBar), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
 }
-
