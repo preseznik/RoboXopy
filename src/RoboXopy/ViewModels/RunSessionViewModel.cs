@@ -83,8 +83,8 @@ public sealed class OutputEntry
 /// <summary>Live state of a run started from this window: output, counters and the final result.</summary>
 public sealed partial class RunSessionViewModel : ObservableObject
 {
-    private const int MaxEntries = 5000;
-    private const int TrimCount = 1000;
+    private const int MaxEntries = 50_000;
+    private const int TrimCount = 10_000;
 
     private readonly ConcurrentQueue<OutputLine> _pending = new();
     private readonly DispatcherTimer _timer;
@@ -118,6 +118,7 @@ public sealed partial class RunSessionViewModel : ObservableObject
     public string CommandLine { get; }
     public DateTime StartedAt { get; }
     public string TitleText => DryRun ? "Previewing" : "Running";
+    public string OutputRetentionLimitText => MaxEntries.ToString("N0");
 
     [ObservableProperty] private bool _isRunning = true;
     [ObservableProperty] private bool _isCancelling;
@@ -158,6 +159,7 @@ public sealed partial class RunSessionViewModel : ObservableObject
     [ObservableProperty] private IReadOnlyList<OutputEntry> _filteredEntries = [];
     [ObservableProperty] private long _filteredEntriesDisplayCount;
     [ObservableProperty] private long _filteredEntriesTotalCount;
+    [ObservableProperty] private long _filteredEntriesByteCount;
     [ObservableProperty] private string _outputNameFilter = "";
     [ObservableProperty] private OutputTypeFilter _selectedOutputTypeFilter = OutputTypeFilters[0];
     [ObservableProperty] private OutputSortColumn? _selectedOutputSortColumn;
@@ -166,7 +168,8 @@ public sealed partial class RunSessionViewModel : ObservableObject
     public bool HasBreakdown => Breakdown is { Count: > 0 };
     public bool HasFindings => !string.IsNullOrEmpty(FindingsText);
     public bool IsBreakdownFilterActive => SelectedBreakdownKind is not null;
-    public bool HasFilteredOutputLimitNotice => IsBreakdownFilterActive && Trimmed;
+    public bool HasFilteredOutputLimitNotice => Trimmed;
+    public string FilteredEntriesBytesText => RunFormatting.FormatBytes(FilteredEntriesByteCount);
     public Brush? OutputListBackground => SelectedBreakdownKind switch
     {
         BreakdownKind.Unchanged => new SolidColorBrush(Color.FromArgb(20, 128, 128, 128)),
@@ -184,19 +187,30 @@ public sealed partial class RunSessionViewModel : ObservableObject
 
     private void RefreshFilteredEntries()
     {
-        IEnumerable<OutputEntry> entries = Entries;
-        if (SelectedBreakdownKind is { } kind) entries = entries.Where(entry => EntryMatchesKind(entry, kind));
-        if (SelectedOutputTypeFilter.Type is { } type) entries = entries.Where(entry => entry.AdditionType == type);
-        if (!string.IsNullOrWhiteSpace(OutputNameFilter))
+        IReadOnlyList<OutputEntry> displayedEntries;
+        if (SelectedBreakdownKind is null
+            && SelectedOutputTypeFilter.Type is null
+            && string.IsNullOrWhiteSpace(OutputNameFilter)
+            && SelectedOutputSortColumn is null)
         {
-            entries = entries.Where(entry => entry.Name?.Contains(OutputNameFilter, StringComparison.OrdinalIgnoreCase) == true);
+            displayedEntries = Entries;
         }
+        else
+        {
+            IEnumerable<OutputEntry> entries = Entries;
+            if (SelectedBreakdownKind is { } kind) entries = entries.Where(entry => EntryMatchesKind(entry, kind));
+            if (SelectedOutputTypeFilter.Type is { } type) entries = entries.Where(entry => entry.AdditionType == type);
+            if (!string.IsNullOrWhiteSpace(OutputNameFilter))
+            {
+                entries = entries.Where(entry => entry.Name?.Contains(OutputNameFilter, StringComparison.OrdinalIgnoreCase) == true);
+            }
 
-        entries = SortEntries(entries);
-        var displayedEntries = entries.ToList();
+            displayedEntries = SortEntries(entries).ToList();
+        }
 
         FilteredEntries = displayedEntries;
         FilteredEntriesDisplayCount = displayedEntries.Count;
+        FilteredEntriesByteCount = displayedEntries.Sum(entry => entry.Size ?? 0);
         FilteredEntriesTotalCount = SelectedBreakdownKind is { } selectedKind
             ? Breakdown?.FirstOrDefault(segment => segment.Kind == selectedKind)?.Count ?? 0
             : displayedEntries.Count;
@@ -227,6 +241,7 @@ public sealed partial class RunSessionViewModel : ObservableObject
     public string ExtrasLabel { get; }
 
     partial void OnByteCountChanged(long value) => OnPropertyChanged(nameof(BytesText));
+    partial void OnFilteredEntriesByteCountChanged(long value) => OnPropertyChanged(nameof(FilteredEntriesBytesText));
 
     [RelayCommand]
     private void SortOutput(OutputSortColumn column)
