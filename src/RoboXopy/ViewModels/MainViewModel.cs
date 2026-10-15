@@ -222,7 +222,7 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void NewProfile()
     {
-        OpenProfileWizard();
+        NewBlankProfile();
     }
 
     [RelayCommand]

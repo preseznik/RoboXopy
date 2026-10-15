@@ -99,8 +99,26 @@
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
-                    <Button Style="{StaticResource IconButtonStyle}" Content="&#xE710;" ToolTip="Create a profile with the setup wizard (Ctrl+N)"
-                            AutomationProperties.Name="Create profile with wizard" Command="{Binding OpenProfileWizardCommand}" />
+                    <Button Style="{StaticResource IconButtonStyle}" Content="&#xE710;" ToolTip="Create a new profile"
+                            AutomationProperties.Name="Create new profile" c:DropDownMenu.IsEnabled="True">
+                        <Button.ContextMenu>
+                            <!-- Opened menus inherit the icon font; reset it for readable menu labels. -->
+                            <ContextMenu FontFamily="{DynamicResource {x:Static SystemFonts.MessageFontFamilyKey}}"
+                                         FontSize="{DynamicResource ControlContentThemeFontSize}">
+                                <MenuItem Header="Profile wizard…" Command="{Binding OpenProfileWizardCommand}">
+                                    <MenuItem.Icon>
+                                        <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE721;" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="Blank profile" Command="{Binding NewProfileCommand}"
+                                          InputGestureText="Ctrl+N">
+                                    <MenuItem.Icon>
+                                        <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE710;" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
                 </StackPanel>
             </Grid>
 
