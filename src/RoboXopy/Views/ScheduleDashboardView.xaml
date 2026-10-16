@@ -73,6 +73,19 @@
                                         <TextBlock Text="  ·  " Style="{StaticResource CaptionTextBlockStyle}" />
                                         <TextBlock Text="{Binding NextRun, StringFormat='Next: {0}'}" Style="{StaticResource CaptionTextBlockStyle}" />
                                     </StackPanel>
+                                    <TextBlock Margin="0,3,0,0" Visibility="{Binding HasDestinationHealth, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+                                                <Setter Property="Margin" Value="0,3,0,0" />
+                                                <Setter Property="Text" Value="{Binding DestinationHealth, StringFormat='Destination: {0}'}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasDestinationHealthProblem}" Value="True">
+                                                        <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </StackPanel>
                                 <Button Grid.Column="1" Content="Open profile" VerticalAlignment="Center" Margin="20,0,0,0"
                                         Command="{Binding DataContext.OpenProfileCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"

@@ -83,6 +83,7 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
             return Finish(record, RobocopyExitCode.StartFailed, RunOutcome.Error, $"robocopy.exe was not found at \"{robocopy}\".");
         }
 
+        var destinationHealth = DestinationHealthProbe.Capture(profile.Destination);
         IDisposable? scheduledRunLease;
         try
         {
@@ -156,6 +157,14 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
         }
         record.HasPermissionIssue = PermissionIssueDetector.HasAccessDeniedOutput(result.Lines)
             || record.Findings?.Any(finding => finding.MayRequireElevation) == true;
+        record.DestinationHealth = destinationHealth with
+        {
+            BytesCopied = record.Summary?.Bytes.Copied,
+            BytesPerSecond = stopwatch.Elapsed.TotalSeconds > 0
+                ? (record.Summary?.Bytes.Copied ?? 0) / stopwatch.Elapsed.TotalSeconds
+                : null,
+            HasPermissionIssue = record.HasPermissionIssue,
+        };
 
         lock (logSync)
         {

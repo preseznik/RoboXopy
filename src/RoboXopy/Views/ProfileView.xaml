@@ -313,6 +313,13 @@
                                 </Grid>
                             </Border>
 
+                            <c:SettingsCard Icon="&#xE902;" Header="Group"
+                                            Description="Optional group name used for sequential group previews and runs.">
+                                <TextBox Width="280" Text="{Binding Model.Group, UpdateSourceTrigger=PropertyChanged}"
+                                         c:Placeholder.Text="e.g. Work, Home, Offsite"
+                                         AutomationProperties.Name="Profile group" />
+                            </c:SettingsCard>
+
                             <c:SettingsCard Icon="&#xE890;" Header="Latest scheduled preview" Description="{Binding LatestScheduledPreviewText}"
                                             Visibility="{Binding HasLatestScheduledPreview, Converter={StaticResource BoolToVisibility}}">
                                 <StackPanel Orientation="Horizontal">

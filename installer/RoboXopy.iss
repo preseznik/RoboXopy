@@ -54,6 +54,7 @@ PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog commandline
 DefaultDirName={autopf}\RoboXopy
 DisableProgramGroupPage=yes
+DisableWelcomePage=no
 ; The uninstaller may remove the user's RoboXopy data folder (see [Code]); that is intended.
 UsedUserAreasWarning=no
 
@@ -105,6 +106,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PublishDir}\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PublishDir}\CHANGELOG.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#PublishDir}\CHANGELOG.md"; DestDir: "{tmp}"; Flags: dontcopy
 
 [Icons]
 Name: "{autoprograms}\RoboXopy"; Filename: "{app}\RoboXopy.exe"; Comment: "Robocopy profiles, mirroring and schedules"
@@ -148,6 +150,31 @@ begin
       DataDir := DataDir + '\';
     Result := Trim(Result + ' --data-dir "' + DataDir + '"');
   end;
+end;
+
+var
+  ChangelogPage: TWizardPage;
+  ChangelogMemo: TNewMemo;
+  ChangelogText: AnsiString;
+
+procedure InitializeWizard;
+begin
+  ChangelogPage := CreateCustomPage(wpWelcome, 'What''s new',
+    'Review the changes in this RoboXopy release, then click Next to continue setup.');
+  ChangelogMemo := TNewMemo.Create(ChangelogPage);
+  ChangelogMemo.Parent := ChangelogPage.Surface;
+  ChangelogMemo.ReadOnly := True;
+  ChangelogMemo.ScrollBars := ssVertical;
+  ChangelogMemo.WordWrap := False;
+  ChangelogMemo.Font.Name := 'Consolas';
+  ChangelogMemo.Font.Size := 9;
+  ChangelogMemo.SetBounds(0, 0, ChangelogPage.SurfaceWidth, ChangelogPage.SurfaceHeight);
+
+  ExtractTemporaryFile('CHANGELOG.md');
+  if LoadStringFromFile(ExpandConstant('{tmp}\CHANGELOG.md'), ChangelogText) then
+    ChangelogMemo.Text := ChangelogText
+  else
+    ChangelogMemo.Text := 'Release notes could not be loaded.';
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

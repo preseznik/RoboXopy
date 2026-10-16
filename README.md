@@ -21,6 +21,7 @@ Built with WPF on .NET 10 and the Windows 11 (Fluent) theme. Light, dark and sys
   - A schedule can run as a **preview only**. It never changes files; when it finds pending copies, removals, mismatches, or failures, the profile is marked stale.
   - Scheduled runs and previews queue one at a time by default, including jobs launched by Windows Task Scheduler. Settings can allow two or three simultaneous scheduled operations.
 - **Schedule dashboard**: see every enabled schedule in one place, including active and queued operations, the next run, preview-only schedules, runner choice, concurrency limit, and setup blockers such as paused in-app schedules or an unregistered Task Scheduler task.
+- **Destination health**: completed runs retain destination availability, free capacity when available, throughput, and permission signals. The Schedule dashboard shows the latest health snapshot for each scheduled profile.
 - **Safety Center**: inspect every historical source RoboXopy remembers, see destination profiles that overlap those sources, and revoke a saved destination acknowledgement at any time.
 - **Stale sync status**: a timer-ring and **STALE** badge show when a profile has not successfully synced for 24 hours (amber) or 7 days (red). Interval schedules turn amber after one missed interval and red after three. A scheduled preview that finds changes also marks the profile stale until a successful sync.
 - **Optional freshness alerts**: notifications for stale/overdue transitions and scheduled previews that find changes are disabled by default. When enabled in Settings, each state transition is announced once; the profile shows its latest scheduled-preview result with actions to inspect, run, or restore.
@@ -31,6 +32,7 @@ Built with WPF on .NET 10 and the Windows 11 (Fluent) theme. Light, dark and sys
 - **Administrator restart**: Settings can restart RoboXopy with administrator permissions when protected folders or backup-mode operations need them, and can persist that choice for future interactive launches.
 - **Updates**: RoboXopy checks GitHub for a new release once a day (Settings › Updates; this can be turned off). When one is available it can download, verify and install it, then reopen.
 - **Import and export**: profiles can be exported to and imported from JSON. **Import › Robocopy batch file** turns an existing `.bat` or `.cmd` that runs robocopy into a profile. A wizard shows the command it found and lets you pick one when the file has several. It lists how each switch was imported (and which weren't, such as `/LOG` or `/JOB`), and lets you name the profile and check the folders before it's created. Relative paths, `%~dp0`, `cd`/`pushd` and `^` line continuations are resolved.
+- **Profile groups**: assign an optional group name on a profile’s General tab, then preview or run each group sequentially. Individual preflight and destructive-operation safeguards still apply to every profile.
 
 ## Requirements
 

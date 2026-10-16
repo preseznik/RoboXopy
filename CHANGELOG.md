@@ -8,6 +8,8 @@ All notable changes to RoboXopy are listed here. The format follows [Keep a Chan
 
 ### Added
 
+- **Profile groups.** Profiles can have an optional group name and a new groups view can preview or run every profile in a group sequentially. Each profile keeps its existing preflight and destructive-operation safety checks.
+- **Destination health history.** Completed runs retain destination availability, free capacity when Windows can inspect it, copied throughput, and permission signals. The Schedule dashboard shows the latest snapshot for each scheduled profile.
 - **Rule tester.** The Filters tab can now test a source file or folder and explain its include/exclude pattern, directory, age, size, and archive decisions. It clearly identifies change-type filters that require destination comparison.
 - **Fast metadata verification.** Profiles can optionally run a filter-aware robocopy dry run after a real copy. Verification results are saved with the run and remaining differences become a visible warning; ordinary Copy-mode destination extras are correctly allowed.
 - - **Administrator restart preference.** Settings now offers **Restart as administrator** and an optional always-start-elevated preference for future interactive launches; the existing permission-error prompt remains available after a failed run or preview. Setup also offers an explicit **View changelog** finish-page action and always installs `CHANGELOG.md`.

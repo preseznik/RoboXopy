@@ -9,6 +9,7 @@ public sealed partial class SyncProfile : ObservableObject
 {
     [ObservableProperty] private Guid _id = Guid.NewGuid();
     [ObservableProperty] private string _name = "New profile";
+    [ObservableProperty] private string _group = "";
     [ObservableProperty] private string _source = "";
     [ObservableProperty] private string _destination = "";
     /// <summary>Normalized risky destination explicitly acknowledged by the user, if it still matches <see cref="Destination"/>.</summary>

@@ -264,6 +264,15 @@ public sealed partial class ProfileViewModel : ObservableObject
     public string LatestScheduledPreviewText => LatestScheduledPreview is { } preview
         ? $"{ScheduleDescriber.FormatRelative((preview.EndedAt > preview.StartedAt ? preview.EndedAt : preview.StartedAt).LocalDateTime, DateTime.Now)} · {RunFormatting.PreviewDeltaSummary(preview)}"
         : "";
+    public DestinationHealthSnapshot? LatestDestinationHealth => _statusRecords
+        .Where(record => record.DestinationHealth is not null)
+        .OrderByDescending(record => record.EndedAt > record.StartedAt ? record.EndedAt : record.StartedAt)
+        .Select(record => record.DestinationHealth)
+        .FirstOrDefault();
+    public bool HasDestinationHealth => LatestDestinationHealth is not null;
+    public string LatestDestinationHealthText => LatestDestinationHealth?.Summary ?? "";
+    public bool LatestDestinationHealthHasProblem => LatestDestinationHealth is { IsAvailable: false }
+        || LatestDestinationHealth?.HasPermissionIssue == true;
 
     partial void OnSelectedHistoryRunKindFilterChanged(HistoryRunKindFilterOption value) => RefreshFilteredHistory();
     partial void OnSelectedHistoryErrorFilterChanged(HistoryErrorFilterOption value) => RefreshFilteredHistory();
@@ -375,7 +384,12 @@ public sealed partial class ProfileViewModel : ObservableObject
             return;
         }
 
-        if (property == nameof(SyncProfile.Name)) OnPropertyChanged(nameof(DisplayName));
+        if (property == nameof(SyncProfile.Name))
+        {
+            OnPropertyChanged(nameof(DisplayName));
+            _main.RefreshProfileGroups();
+        }
+        if (property == nameof(SyncProfile.Group)) _main.RefreshProfileGroups();
 
         if (property.StartsWith("Options.", StringComparison.Ordinal))
         {
@@ -567,6 +581,14 @@ public sealed partial class ProfileViewModel : ObservableObject
         OnPropertyChanged(nameof(LatestScheduledPreviewText));
     }
 
+    private void RefreshDestinationHealth()
+    {
+        OnPropertyChanged(nameof(LatestDestinationHealth));
+        OnPropertyChanged(nameof(HasDestinationHealth));
+        OnPropertyChanged(nameof(LatestDestinationHealthText));
+        OnPropertyChanged(nameof(LatestDestinationHealthHasProblem));
+    }
+
     // ── History ─────────────────────────────────────────────────────────
     public async Task LoadLatestAsync()
     {
@@ -579,6 +601,7 @@ public sealed partial class ProfileViewModel : ObservableObject
             LastRun = records.FirstOrDefault();
             RefreshStaleStatus();
             RefreshLatestScheduledPreview();
+            RefreshDestinationHealth();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -603,6 +626,7 @@ public sealed partial class ProfileViewModel : ObservableObject
             if (records.Count > 0 && !IsRunning) LastRun = records[0];
             RefreshStaleStatus();
             RefreshLatestScheduledPreview();
+            RefreshDestinationHealth();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -661,10 +685,21 @@ public sealed partial class ProfileViewModel : ObservableObject
     private bool CanStop() => IsRunning;
 
     [RelayCommand(CanExecute = nameof(CanRun))]
-    private async Task Run()
+    private Task Run() => RunInteractiveAsync(dryRun: false);
+
+    [RelayCommand(CanExecute = nameof(CanRun))]
+    private Task Preview() => RunInteractiveAsync(dryRun: true);
+
+    /// <summary>Runs the normal interactive safety flow; group actions call this sequentially.</summary>
+    public async Task<bool> RunInteractiveAsync(bool dryRun)
     {
-        if (!await _main.ConfirmPreflightAsync(Model, dryRun: false)) return;
-        if (!await _main.ConfirmHistoricalSourceDestinationAsync(Model, dryRun: false)) return;
+        if (!await _main.ConfirmPreflightAsync(Model, dryRun)) return false;
+        if (!await _main.ConfirmHistoricalSourceDestinationAsync(Model, dryRun)) return false;
+        if (dryRun)
+        {
+            return await StartAsync(dryRun: true, RunTrigger.Manual, confirmedHistoricalSourceDestination: true) is not null;
+        }
+
         var snapshot = Snapshot();
 
         // Skipped (unreadable) folders aren't removed from the destination, so only the history-based warnings need a confirmation.
@@ -680,7 +715,7 @@ public sealed partial class ProfileViewModel : ObservableObject
                 $"{string.Join("\n", findings)}\n\nCheck that the source and destination are the ones you expect before running “{DisplayName}”.",
                 "Run anyway",
                 destructive: true);
-            if (!ok) return;
+            if (!ok) return false;
         }
         else if (IsDestructive && !(LastRun is { DryRun: false }))
         {
@@ -694,18 +729,10 @@ public sealed partial class ProfileViewModel : ObservableObject
                 $"Run “{DisplayName}” for the first time?",
                 $"{verb}\n\nUse Preview first to see exactly what will change.",
                 "Run now");
-            if (!ok) return;
+            if (!ok) return false;
         }
 
-        await StartAsync(dryRun: false, RunTrigger.Manual, confirmedHistoricalSourceDestination: true);
-    }
-
-    [RelayCommand(CanExecute = nameof(CanRun))]
-    private async Task Preview()
-    {
-        if (!await _main.ConfirmPreflightAsync(Model, dryRun: true)) return;
-        if (!await _main.ConfirmHistoricalSourceDestinationAsync(Model, dryRun: true)) return;
-        await StartAsync(dryRun: true, RunTrigger.Manual, confirmedHistoricalSourceDestination: true);
+        return await StartAsync(dryRun: false, RunTrigger.Manual, confirmedHistoricalSourceDestination: true) is not null;
     }
 
     [RelayCommand(CanExecute = nameof(CanStop))]
@@ -809,6 +836,7 @@ public sealed partial class ProfileViewModel : ObservableObject
             _statusRecords = [record, .. _statusRecords.Where(existing => existing.Id != record.Id).Take(HistoryStore.MaxRecordsPerProfile - 1)];
             RefreshStaleStatus();
             RefreshLatestScheduledPreview();
+            RefreshDestinationHealth();
             if (_historyLoaded)
             {
                 History.Insert(0, new HistoryItemViewModel(record));
@@ -919,6 +947,7 @@ public sealed partial class ProfileViewModel : ObservableObject
         LastRun = null;
         RefreshStaleStatus();
         RefreshLatestScheduledPreview();
+        RefreshDestinationHealth();
     }
 
     /// <summary>Scrolls to a run picked on the activity chart and highlights it briefly.</summary>

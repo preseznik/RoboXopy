@@ -51,6 +51,7 @@ public sealed partial class MainViewModel : ObservableObject
         Import.PropertyChanged += OnModalPropertyChanged;
         ScheduleDashboard = new ScheduleDashboardViewModel(this);
         SafetyCenter = new SafetyCenterViewModel(this);
+        ProfileGroups = new ProfileGroupsViewModel(this);
 
         foreach (var profile in Host.Profiles.LoadAll().OrderBy(p => p.SortOrder).ThenBy(p => p.CreatedAt))
         {
@@ -63,6 +64,7 @@ public sealed partial class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(ShowEmptyState));
             ScheduleDashboard.Refresh();
             SafetyCenter.Refresh();
+            ProfileGroups.Refresh();
         };
 
         SelectedProfile = Profiles.FirstOrDefault(p => p.Id == Host.Settings.LastSelectedProfileId) ?? Profiles.FirstOrDefault();
@@ -78,6 +80,7 @@ public sealed partial class MainViewModel : ObservableObject
     public UpdateViewModel Updates { get; }
     public ScheduleDashboardViewModel ScheduleDashboard { get; }
     public SafetyCenterViewModel SafetyCenter { get; }
+    public ProfileGroupsViewModel ProfileGroups { get; }
     public DialogViewModel Dialog { get; } = new();
     public BatchImportViewModel Import { get; } = new();
     public ObservableCollection<ProfileViewModel> Profiles { get; } = [];
@@ -88,24 +91,29 @@ public sealed partial class MainViewModel : ObservableObject
     private ProfileViewModel? _selectedProfile;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowProfile), nameof(ShowScheduleDashboard), nameof(ShowSafetyCenter))]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowProfile), nameof(ShowScheduleDashboard), nameof(ShowSafetyCenter), nameof(ShowProfileGroups))]
     private bool _isSettingsOpen;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowProfile), nameof(ShowScheduleDashboard), nameof(ShowSafetyCenter))]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowProfile), nameof(ShowScheduleDashboard), nameof(ShowSafetyCenter), nameof(ShowProfileGroups))]
     private bool _isScheduleDashboardOpen;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowProfile), nameof(ShowScheduleDashboard), nameof(ShowSafetyCenter))]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowProfile), nameof(ShowScheduleDashboard), nameof(ShowSafetyCenter), nameof(ShowProfileGroups))]
     private bool _isSafetyCenterOpen;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowProfile), nameof(ShowScheduleDashboard), nameof(ShowSafetyCenter), nameof(ShowProfileGroups))]
+    private bool _isProfileGroupsOpen;
 
     [ObservableProperty] private string _searchText = "";
 
     public bool HasProfiles => Profiles.Count > 0;
-    public bool ShowProfile => !IsSettingsOpen && !IsScheduleDashboardOpen && !IsSafetyCenterOpen && SelectedProfile is not null;
-    public bool ShowEmptyState => !IsSettingsOpen && !IsScheduleDashboardOpen && !IsSafetyCenterOpen && SelectedProfile is null;
+    public bool ShowProfile => !IsSettingsOpen && !IsScheduleDashboardOpen && !IsSafetyCenterOpen && !IsProfileGroupsOpen && SelectedProfile is not null;
+    public bool ShowEmptyState => !IsSettingsOpen && !IsScheduleDashboardOpen && !IsSafetyCenterOpen && !IsProfileGroupsOpen && SelectedProfile is null;
     public bool ShowScheduleDashboard => IsScheduleDashboardOpen;
     public bool ShowSafetyCenter => IsSafetyCenterOpen;
+    public bool ShowProfileGroups => IsProfileGroupsOpen;
     public bool AnyRunning => Profiles.Any(p => p.IsRunning);
 
     /// <summary>A dialog or the import wizard covers the window, so the rest of it is disabled.</summary>
@@ -124,6 +132,7 @@ public sealed partial class MainViewModel : ObservableObject
         IsSettingsOpen = false;
         IsScheduleDashboardOpen = false;
         IsSafetyCenterOpen = false;
+        IsProfileGroupsOpen = false;
         Host.Settings.LastSelectedProfileId = value.Id;
         value.Validate();
         value.RefreshExternalState();
@@ -315,6 +324,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (IsSettingsOpen) return;
         IsScheduleDashboardOpen = false;
         IsSafetyCenterOpen = false;
+        IsProfileGroupsOpen = false;
         _profileBeforeSettings = SelectedProfile;
         SelectedProfile = null;
         IsSettingsOpen = true;
@@ -332,6 +342,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         IsSettingsOpen = false;
         IsSafetyCenterOpen = false;
+        IsProfileGroupsOpen = false;
         IsScheduleDashboardOpen = true;
         ScheduleDashboard.Refresh();
     }
@@ -341,8 +352,45 @@ public sealed partial class MainViewModel : ObservableObject
     {
         IsSettingsOpen = false;
         IsScheduleDashboardOpen = false;
+        IsProfileGroupsOpen = false;
         IsSafetyCenterOpen = true;
         SafetyCenter.Refresh();
+    }
+
+    [RelayCommand]
+    private void OpenProfileGroups()
+    {
+        IsSettingsOpen = false;
+        IsScheduleDashboardOpen = false;
+        IsSafetyCenterOpen = false;
+        IsProfileGroupsOpen = true;
+        ProfileGroups.Refresh();
+    }
+
+    internal void RefreshProfileGroups() => ProfileGroups.Refresh();
+
+    public async Task RunGroupAsync(IEnumerable<ProfileViewModel> profiles, bool dryRun)
+    {
+        var ready = profiles.Where(profile => !profile.IsBusy && !profile.HasErrors).ToList();
+        if (ready.Count == 0)
+        {
+            await AlertAsync("No profiles ready", "Every profile in this group is running or has validation errors.");
+            return;
+        }
+
+        if (!dryRun)
+        {
+            var ok = await ConfirmAsync(
+                $"Run {ready.Count:N0} profile{(ready.Count == 1 ? "" : "s")} sequentially?",
+                "Each profile runs one at a time and keeps its normal preflight and destructive-operation confirmations.",
+                "Run group");
+            if (!ok) return;
+        }
+
+        foreach (var profile in ready)
+        {
+            await profile.RunInteractiveAsync(dryRun);
+        }
     }
 
     public void OpenProfile(ProfileViewModel profile)
@@ -351,6 +399,7 @@ public sealed partial class MainViewModel : ObservableObject
         IsSettingsOpen = false;
         IsScheduleDashboardOpen = false;
         IsSafetyCenterOpen = false;
+        IsProfileGroupsOpen = false;
         SelectedProfile = profile;
         profile.Validate();
         profile.RefreshExternalState();

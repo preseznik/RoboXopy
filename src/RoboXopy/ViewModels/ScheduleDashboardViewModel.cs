@@ -87,6 +87,9 @@ public sealed class ScheduleDashboardItem
         NextRun = profile.NextRunText;
         IsPreview = profile.Schedule.PreviewOnly;
         HasBlocker = profile.HasScheduleBlocker;
+        DestinationHealth = profile.LatestDestinationHealthText;
+        HasDestinationHealth = profile.HasDestinationHealth;
+        HasDestinationHealthProblem = profile.LatestDestinationHealthHasProblem;
     }
 
     public ProfileViewModel Profile { get; }
@@ -99,6 +102,9 @@ public sealed class ScheduleDashboardItem
     public bool IsActive { get; }
     public bool IsPreview { get; }
     public bool HasBlocker { get; }
+    public string DestinationHealth { get; }
+    public bool HasDestinationHealth { get; }
+    public bool HasDestinationHealthProblem { get; }
 
     private static string GetState(ProfileViewModel profile, AppSettings settings)
     {

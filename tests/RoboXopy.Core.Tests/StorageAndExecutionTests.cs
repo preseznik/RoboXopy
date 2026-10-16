@@ -25,7 +25,7 @@ public sealed class StorageAndExecutionTests : IDisposable
     public void Profiles_RoundTrip()
     {
         var store = new ProfileStore(_paths);
-        var p = new SyncProfile { Name = "Photos", Source = @"C:\Photos", Destination = @"E:\Photos" };
+        var p = new SyncProfile { Name = "Photos", Group = "Personal", Source = @"C:\Photos", Destination = @"E:\Photos" };
         p.ConfirmedHistoricalSourceDestination = @"E:\Photos";
         p.Options.VerifyAfterCopy = true;
         p.Options.Mode = CopyMode.Mirror;
@@ -37,6 +37,7 @@ public sealed class StorageAndExecutionTests : IDisposable
 
         var loaded = Assert.Single(store.LoadAll());
         Assert.Equal(p.Id, loaded.Id);
+        Assert.Equal("Personal", loaded.Group);
         Assert.Equal(CopyMode.Mirror, loaded.Options.Mode);
         Assert.Equal(["*.tmp"], loaded.Options.ExcludeFiles);
         Assert.True(loaded.Schedule.Saturday);
@@ -147,6 +148,9 @@ public sealed class StorageAndExecutionTests : IDisposable
         Assert.NotNull(run.Verification);
         Assert.Equal(VerificationStatus.Passed, run.Verification.Status);
         Assert.Contains("verification", File.ReadAllText(run.LogFile!), StringComparison.OrdinalIgnoreCase);
+        Assert.NotNull(run.DestinationHealth);
+        Assert.True(run.DestinationHealth.IsAvailable);
+        Assert.NotNull(run.DestinationHealth.AvailableFreeBytes);
         Assert.Contains(lines, l => l.Kind == OutputLineKind.File && l.Name!.EndsWith("a.txt"));
 
         var again = await executor.ExecuteAsync(new RunRequest(profile, RunTrigger.Manual));

@@ -59,6 +59,7 @@ public sealed class RunRecord
     /// <summary>True when the run encountered an access-denied error or unreadable source folder.</summary>
     public bool HasPermissionIssue { get; set; }
     public VerificationResult? Verification { get; set; }
+    public DestinationHealthSnapshot? DestinationHealth { get; set; }
 
     /// <summary>Unusual aspects of this run compared with earlier runs; null when there is nothing to report.</summary>
     public List<RunFinding>? Findings { get; set; }
