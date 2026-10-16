@@ -460,6 +460,46 @@
                                               AutomationProperties.Name="Minimum file size unit" />
                                 </StackPanel>
                             </c:SettingsCard>
+
+                            <TextBlock Text="Test rules" Style="{StaticResource SectionHeaderStyle}" />
+                            <c:SettingsCard Icon="&#xE8A5;" Header="Test a file or folder" IsContentBelow="True"
+                                            Description="Choose a path within the source to see which include, exclude, age, size, and archive rules apply. Change-type filters need destination comparison and are called out separately.">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Style="{StaticResource MonoTextBoxStyle}" Text="{Binding RuleTestPath, UpdateSourceTrigger=PropertyChanged}"
+                                                 c:Placeholder.Text="File or folder inside the source"
+                                                 AutomationProperties.Name="Path to test against filters" />
+                                        <Button Grid.Column="1" Content="File…" Margin="8,0,0,0" Command="{Binding BrowseRuleTestFileCommand}" />
+                                        <Button Grid.Column="2" Content="Folder…" Margin="8,0,0,0" Command="{Binding BrowseRuleTestFolderCommand}" />
+                                        <Button Grid.Column="3" Content="Test" Margin="8,0,0,0" Command="{Binding TestRulesCommand}" />
+                                    </Grid>
+                                    <Border Style="{StaticResource CardStyle}" Margin="0,12,0,0" Padding="12,10"
+                                            Visibility="{Binding HasRuleTestResult, Converter={StaticResource BoolToVisibility}}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding RuleTestSummary}" FontWeight="SemiBold">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsRuleTestExcluded}" Value="True">
+                                                                <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding RuleTestDetails}" TextWrapping="Wrap" Margin="0,5,0,0"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </c:SettingsCard>
                         </StackPanel>
                     </Grid>
                 </ScrollViewer>

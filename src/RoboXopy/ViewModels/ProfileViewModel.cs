@@ -190,6 +190,18 @@ public sealed partial class ProfileViewModel : ObservableObject
     public IEnumerable<ProfileIssue> Warnings => Issues.Where(i => i.Severity != IssueSeverity.Error);
 
     [ObservableProperty] private string? _saveError;
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(TestRulesCommand))]
+    private string _ruleTestPath = "";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasRuleTestResult), nameof(RuleTestSummary), nameof(RuleTestDetails), nameof(IsRuleTestIncluded), nameof(IsRuleTestExcluded))]
+    private RuleTestResult? _ruleTestResult;
+
+    public bool HasRuleTestResult => RuleTestResult is not null;
+    public string RuleTestSummary => RuleTestResult?.Summary ?? "";
+    public string RuleTestDetails => RuleTestResult is null ? "" : string.Join(Environment.NewLine, RuleTestResult.Reasons);
+    public bool IsRuleTestIncluded => RuleTestResult?.Outcome == RuleTestOutcome.Included;
+    public bool IsRuleTestExcluded => RuleTestResult?.Outcome == RuleTestOutcome.Excluded;
 
     // ── Run state ───────────────────────────────────────────────────────
     [ObservableProperty]
@@ -717,6 +729,30 @@ public sealed partial class ProfileViewModel : ObservableObject
     {
         if (Application.Current.MainWindow is not { } owner) return;
         new Views.RestoreWizardWindow(this, _host) { Owner = owner }.ShowDialog();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanTestRules))]
+    private async Task TestRules()
+    {
+        var snapshot = Snapshot();
+        var path = RuleTestPath;
+        RuleTestResult = await Task.Run(() => ProfileRuleTester.Test(snapshot, path));
+    }
+
+    private bool CanTestRules() => !string.IsNullOrWhiteSpace(RuleTestPath);
+
+    [RelayCommand]
+    private void BrowseRuleTestFile()
+    {
+        var dialog = new OpenFileDialog { Title = "Choose a file to test", CheckFileExists = true };
+        if (Directory.Exists(Model.Source)) dialog.InitialDirectory = Model.Source;
+        if (dialog.ShowDialog(Application.Current.MainWindow) == true) RuleTestPath = dialog.FileName;
+    }
+
+    [RelayCommand]
+    private void BrowseRuleTestFolder()
+    {
+        if (PickFolder("Choose a folder to test", Model.Source) is { } path) RuleTestPath = path;
     }
 
     [RelayCommand]

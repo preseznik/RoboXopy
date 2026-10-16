@@ -8,6 +8,7 @@ public sealed partial class AppSettings : ObservableObject
     [ObservableProperty] private bool _closeToTray = true;
     [ObservableProperty] private bool _startWithWindows;
     [ObservableProperty] private bool _startMinimized = true;
+    [ObservableProperty] private bool _alwaysRunAsAdministrator;
     [ObservableProperty] private bool _showNotifications = true;
     [ObservableProperty] private bool _notifyOnlyOnProblems;
     [ObservableProperty] private bool _notifyOnStaleSync;

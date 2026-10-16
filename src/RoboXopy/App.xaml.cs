@@ -40,10 +40,7 @@ public partial class App : Application
     public MainViewModel Main { get; private set; } = null!;
     public TrayIconService? Tray { get; private set; }
 
-    public sealed record ElevationRestartResult(string? Error)
-    {
-        public bool Started => Error is null;
-    }
+    public sealed record ElevationRestartResult(bool Started, string? Error);
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -53,6 +50,11 @@ public partial class App : Application
 
         Host = new AppHost(AppPaths.Default);
         ThemeService.Apply(Host.Settings.Theme);
+        if (Host.Settings.AlwaysRunAsAdministrator && !IsCurrentAdministrator() && StartElevatedInstance().Started)
+        {
+            Shutdown();
+            return;
+        }
 
         Main = new MainViewModel(Host);
         _window = new MainWindow(Main);
@@ -221,8 +223,16 @@ public partial class App : Application
 
     public async Task<ElevationRestartResult> RestartAsAdministratorAsync()
     {
-        if (_exiting) return new("RoboXopy is already closing.");
+        if (_exiting) return new(false, "RoboXopy is already closing.");
 
+        var result = StartElevatedInstance();
+        if (!result.Started) return result;
+        await ExitApplicationAsync(force: true);
+        return result;
+    }
+
+    private ElevationRestartResult StartElevatedInstance()
+    {
         try
         {
             var arguments = $"--wait-for-pid {Environment.ProcessId}{Host.Paths.LaunchArguments}";
@@ -232,19 +242,24 @@ public partial class App : Application
                 Verb = "runas",
                 WorkingDirectory = Path.GetDirectoryName(Host.ExePath) ?? AppContext.BaseDirectory,
             };
-            if (Process.Start(startInfo) is null) return new("Windows couldn't start the elevated RoboXopy process.");
+            if (Process.Start(startInfo) is null) return new(false, "Windows couldn't start the elevated RoboXopy process.");
+            return new(true, null);
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
-            return new(null);
+            return new(false, null);
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
         {
-            return new(ex.Message);
+            return new(false, ex.Message);
         }
+    }
 
-        await ExitApplicationAsync(force: true);
-        return new(null);
+    private static bool IsCurrentAdministrator()
+    {
+        using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+        return new System.Security.Principal.WindowsPrincipal(identity)
+            .IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
     }
 
     private void OnMainWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e)

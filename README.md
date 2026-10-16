@@ -9,6 +9,7 @@ Built with WPF on .NET 10 and the Windows 11 (Fluent) theme. Light, dark and sys
 - **Copy modes**: Copy, Mirror (`/MIR`), Move files (`/MOV`) and Move files and folders (`/MOVE`). Destructive modes show warnings.
 - **Preflight safety checks**: manual runs and previews verify that the destination volume is available, report free space when Windows can inspect it, and require an additional confirmation for low capacity, unknown capacity, or destructive destination behavior.
 - **Filters**: include and exclude file patterns, excluded folders, file age and size limits, the archive attribute, and change-type filters (older, newer, changed, extra, lonely, same, tweaked).
+- **Rule tester**: in the Filters tab, test a real source file or folder to see the matching include/exclude, age, size, and archive decisions. It also identifies change-type rules that require a destination comparison.
 - **Copy options**: which file and folder data to copy (`/COPY`, `/DCOPY`), multithreading (`/MT`), restartable and backup modes, unbuffered I/O, compression, junction and symlink handling, FAT time and DST tolerance, and inter-packet gap.
 - **Fast metadata verification**: an optional post-copy, filter-aware robocopy dry run verifies that no copy or mismatch work remains. It records a warning if differences remain; it is not a cryptographic hash check.
 - **Retry and logging**: `/R`, `/W`, log verbosity, and extra raw switches. Every run writes a full robocopy log.
@@ -27,7 +28,7 @@ Built with WPF on .NET 10 and the Windows 11 (Fluent) theme. Light, dark and sys
 - **Unusual-run checks**: each run and preview is compared with the profile's recent runs. A source that suddenly shrank, a mirror that would remove far more than usual, or an unusually large copy is pointed out. After a preview like that, **Run** asks for confirmation first.
 - **Skipped folders**: robocopy counts source folders it can't open as failed without reporting an error. RoboXopy names those folders and says why, such as missing permissions or a junction whose target is gone.
 - **Notifications** when a sync finishes, or only when it has problems.
-- **Administrator restart**: Settings can restart RoboXopy with administrator permissions when protected folders or backup-mode operations need them.
+- **Administrator restart**: Settings can restart RoboXopy with administrator permissions when protected folders or backup-mode operations need them, and can persist that choice for future interactive launches.
 - **Updates**: RoboXopy checks GitHub for a new release once a day (Settings › Updates; this can be turned off). When one is available it can download, verify and install it, then reopen.
 - **Import and export**: profiles can be exported to and imported from JSON. **Import › Robocopy batch file** turns an existing `.bat` or `.cmd` that runs robocopy into a profile. A wizard shows the command it found and lets you pick one when the file has several. It lists how each switch was imported (and which weren't, such as `/LOG` or `/JOB`), and lets you name the profile and check the folders before it's created. Relative paths, `%~dp0`, `cd`/`pushd` and `^` line continuations are resolved.
 

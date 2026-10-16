@@ -250,4 +250,14 @@ public sealed class StorageAndExecutionTests : IDisposable
         Assert.False(new AppSettings().NotifyOnStaleSync);
         Assert.False(new AppSettings().NotifyOnScheduledPreviewChanges);
     }
+
+    [Fact]
+    public void Settings_PersistsAlwaysRunAsAdministrator()
+    {
+        var store = new SettingsStore(_paths);
+        store.Save(new AppSettings { AlwaysRunAsAdministrator = true });
+
+        Assert.True(store.Load().AlwaysRunAsAdministrator);
+        Assert.False(new AppSettings().AlwaysRunAsAdministrator);
+    }
 }

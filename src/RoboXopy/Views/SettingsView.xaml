@@ -40,11 +40,20 @@
                           AutomationProperties.Name="Keep running when closed" />
             </c:SettingsCard>
             <c:SettingsCard Icon="&#xE7EF;" Header="Administrator permissions"
-                            Description="Restart RoboXopy with administrator permissions. Windows will ask for approval; running work is stopped before the restart.">
-                <Button Content="Restart as administrator"
-                        Command="{Binding DataContext.RestartAsAdministratorCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                        IsEnabled="{Binding DataContext.IsAdministrator, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBool}}"
-                        AutomationProperties.Name="Restart as administrator" />
+                            Description="Restart RoboXopy with administrator permissions. Windows will ask for approval; running work is stopped before the restart."
+                            IsContentBelow="True">
+                <StackPanel>
+                    <Button Content="Restart as administrator" HorizontalAlignment="Left"
+                            Command="{Binding DataContext.RestartAsAdministratorCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                            IsEnabled="{Binding DataContext.IsAdministrator, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBool}}"
+                            AutomationProperties.Name="Restart as administrator" />
+                    <CheckBox Content="Always start RoboXopy as administrator"
+                              IsChecked="{Binding Model.AlwaysRunAsAdministrator}"
+                              Margin="0,12,0,0"
+                              AutomationProperties.Name="Always start as administrator" />
+                    <TextBlock Text="Applies to future interactive launches; scheduled command-line runs are not elevated automatically."
+                               Style="{StaticResource SecondaryTextStyle}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                </StackPanel>
             </c:SettingsCard>
 
             <!-- Notifications -->

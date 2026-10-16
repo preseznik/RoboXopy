@@ -104,7 +104,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PublishDir}\README.md"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#PublishDir}\CHANGELOG.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "{#PublishDir}\CHANGELOG.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\RoboXopy"; Filename: "{app}\RoboXopy.exe"; Comment: "Robocopy profiles, mirroring and schedules"
@@ -112,6 +112,7 @@ Name: "{autodesktop}\RoboXopy"; Filename: "{app}\RoboXopy.exe"; Comment: "Roboco
 
 [Run]
 Filename: "{app}\RoboXopy.exe"; Description: "{cm:LaunchProgram,RoboXopy}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\CHANGELOG.md"; Description: "View changelog"; Flags: postinstall shellexec skipifsilent unchecked
 ; After an update started from inside RoboXopy (which passes /RELAUNCH=normal|minimized), start it again.
 Filename: "{app}\RoboXopy.exe"; Parameters: "{code:RelaunchParams}"; Flags: nowait runasoriginaluser; Check: ShouldRelaunch
 
