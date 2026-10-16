@@ -1,0 +1,87 @@
+<UserControl x:Class="RoboXopy.Views.ScheduleDashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:RoboXopy.Controls"
+             xmlns:vm="clr-namespace:RoboXopy.ViewModels">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+        <StackPanel Margin="32,24,32,40" MaxWidth="1000">
+            <Grid>
+                <StackPanel>
+                    <TextBlock Text="Schedule dashboard" Style="{StaticResource TitleTextBlockStyle}" />
+                    <TextBlock Text="Queued, running, and upcoming scheduled operations." Style="{StaticResource SecondaryTextStyle}" Margin="2,4,0,0" />
+                </StackPanel>
+                <Button HorizontalAlignment="Right" VerticalAlignment="Bottom" Command="{Binding RefreshCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE72C;" FontSize="13" Margin="0,0,8,0" />
+                        <TextBlock Text="Refresh" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <c:InfoBar Severity="Warning" Title="In-app schedules are paused"
+                       Message="Queued in-app schedules will wait until you resume them. Windows Task Scheduler profiles are unaffected."
+                       Margin="0,20,0,0"
+                       Visibility="{Binding IsSchedulerPaused, Converter={StaticResource BoolToVisibility}}" />
+
+            <UniformGrid Columns="3" Margin="0,20,0,8">
+                <StackPanel Margin="0,0,16,0">
+                    <TextBlock Text="Scheduled profiles" Style="{StaticResource KpiLabelStyle}" />
+                    <TextBlock Text="{Binding ScheduledCount}" Style="{StaticResource KpiValueStyle}" />
+                </StackPanel>
+                <StackPanel Margin="0,0,16,0">
+                    <TextBlock Text="Queue" Style="{StaticResource KpiLabelStyle}" />
+                    <TextBlock Text="{Binding QueueSummary}" Style="{StaticResource KpiDetailStyle}" TextWrapping="Wrap" />
+                </StackPanel>
+                <StackPanel>
+                    <TextBlock Text="Concurrency" Style="{StaticResource KpiLabelStyle}" />
+                    <TextBlock Text="{Binding ConcurrencySummary}" Style="{StaticResource KpiDetailStyle}" TextWrapping="Wrap" />
+                </StackPanel>
+            </UniformGrid>
+
+            <Border Style="{StaticResource CardStyle}" Padding="24,28" Visibility="{Binding HasItems, Converter={StaticResource InverseBoolToVisibility}}">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE823;" FontSize="32" HorizontalAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                    <TextBlock Text="No schedules are enabled" Style="{StaticResource BodyStrongTextBlockStyle}" HorizontalAlignment="Center" Margin="0,10,0,0" />
+                    <TextBlock Text="Enable a schedule on a profile to see it here." Style="{StaticResource SecondaryTextStyle}" HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+
+            <ItemsControl ItemsSource="{Binding Items}" Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibility}}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:ScheduleDashboardItem}">
+                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,8" Padding="16,14">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Name}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                        <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="3" Padding="6,2" Margin="8,0,0,0">
+                                            <TextBlock Text="{Binding State}" FontSize="11" />
+                                        </Border>
+                                        <TextBlock Text="Preview" FontSize="11" Margin="8,2,0,0"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   Visibility="{Binding IsPreview, Converter={StaticResource BoolToVisibility}}" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" Margin="0,5,0,0"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                        <TextBlock Text="{Binding Runner}" Style="{StaticResource CaptionTextBlockStyle}" />
+                                        <TextBlock Text="  ·  " Style="{StaticResource CaptionTextBlockStyle}" />
+                                        <TextBlock Text="{Binding NextRun, StringFormat='Next: {0}'}" Style="{StaticResource CaptionTextBlockStyle}" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="Open profile" VerticalAlignment="Center" Margin="20,0,0,0"
+                                        Command="{Binding DataContext.OpenProfileCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding Profile}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

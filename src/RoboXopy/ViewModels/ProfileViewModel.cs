@@ -101,6 +101,7 @@ public sealed partial class ProfileViewModel : ObservableObject
         RefreshNextRun();
         UpdateTaskStatus();
         RefreshStaleStatus();
+        OnPropertyChanged(nameof(HasScheduleBlocker));
         _freshnessTimer.Start();
     }
 
@@ -180,7 +181,7 @@ public sealed partial class ProfileViewModel : ObservableObject
 
     // ── Validation ──────────────────────────────────────────────────────
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasErrors), nameof(Errors), nameof(Warnings))]
+    [NotifyPropertyChangedFor(nameof(HasErrors), nameof(Errors), nameof(Warnings), nameof(HasScheduleBlocker))]
     [NotifyCanExecuteChangedFor(nameof(RunCommand), nameof(PreviewCommand))]
     private IReadOnlyList<ProfileIssue> _issues = [];
 
@@ -235,6 +236,9 @@ public sealed partial class ProfileViewModel : ObservableObject
     public bool HasFilteredHistory => FilteredHistory.Count > 0;
     public bool HasHistoryFilters => SelectedHistoryRunKindFilter.Value != HistoryRunKindFilter.All
         || SelectedHistoryErrorFilter.Value != HistoryErrorFilter.All;
+    public bool HasScheduleBlocker => HasErrors
+        || (Schedule.Kind == ScheduleKind.Weekly && !Schedule.SelectedDays.Any())
+        || (Schedule.Runner == ScheduleRunner.TaskScheduler && (!IsTaskRegistered || TaskError is not null));
     public bool IsStale => StaleSyncStatus.IsStale;
     public bool IsCriticalStale => StaleSyncStatus.IsOverdue;
     public double StaleProgress => StaleSyncStatus.Progress;
@@ -288,9 +292,13 @@ public sealed partial class ProfileViewModel : ObservableObject
 
     // ── Task Scheduler ──────────────────────────────────────────────────
     [ObservableProperty] private bool _isSyncingTask;
-    [ObservableProperty] private string? _taskError;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasScheduleBlocker))]
+    private string? _taskError;
     [ObservableProperty] private string _taskStatusText = "";
-    [ObservableProperty] private bool _isTaskRegistered;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasScheduleBlocker))]
+    private bool _isTaskRegistered;
 
     // ── Schedule helpers ────────────────────────────────────────────────
     [ObservableProperty] private string _timeOfDayText;
@@ -606,7 +614,12 @@ public sealed partial class ProfileViewModel : ObservableObject
         OnPropertyChanged(nameof(LastRunText));
     }
 
-    internal void SetScheduledQueued(bool value) => IsScheduledQueued = value;
+    internal void SetScheduledQueued(bool value)
+    {
+        if (IsScheduledQueued == value) return;
+        IsScheduledQueued = value;
+        _main.NotifyRunStateChanged();
+    }
 
     // ── Running ─────────────────────────────────────────────────────────
     private bool CanRun() => !IsBusy && !HasErrors;
@@ -616,6 +629,7 @@ public sealed partial class ProfileViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task Run()
     {
+        if (!await _main.ConfirmPreflightAsync(Model, dryRun: false)) return;
         if (!await _main.ConfirmHistoricalSourceDestinationAsync(Model, dryRun: false)) return;
         var snapshot = Snapshot();
 
@@ -655,6 +669,7 @@ public sealed partial class ProfileViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task Preview()
     {
+        if (!await _main.ConfirmPreflightAsync(Model, dryRun: true)) return;
         if (!await _main.ConfirmHistoricalSourceDestinationAsync(Model, dryRun: true)) return;
         await StartAsync(dryRun: true, RunTrigger.Manual, confirmedHistoricalSourceDestination: true);
     }
@@ -673,6 +688,13 @@ public sealed partial class ProfileViewModel : ObservableObject
     {
         if (Session?.HasPermissionIssue != true || LastRun?.HasPermissionIssue != true) return;
         await _main.OfferRestartAsAdministratorAsync(LastRun);
+    }
+
+    [RelayCommand]
+    private void OpenRestoreWizard()
+    {
+        if (Application.Current.MainWindow is not { } owner) return;
+        new Views.RestoreWizardWindow(this, _host) { Owner = owner }.ShowDialog();
     }
 
     /// <summary>Runs the profile in this process. Returns null when it was already running.</summary>

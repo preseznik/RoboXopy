@@ -7,15 +7,18 @@ Built with WPF on .NET 10 and the Windows 11 (Fluent) theme. Light, dark and sys
 ## Features
 
 - **Copy modes**: Copy, Mirror (`/MIR`), Move files (`/MOV`) and Move files and folders (`/MOVE`). Destructive modes show warnings.
+- **Preflight safety checks**: manual runs and previews verify that the destination volume is available, report free space when Windows can inspect it, and require an additional confirmation for low capacity, unknown capacity, or destructive destination behavior.
 - **Filters**: include and exclude file patterns, excluded folders, file age and size limits, the archive attribute, and change-type filters (older, newer, changed, extra, lonely, same, tweaked).
 - **Copy options**: which file and folder data to copy (`/COPY`, `/DCOPY`), multithreading (`/MT`), restartable and backup modes, unbuffered I/O, compression, junction and symlink handling, FAT time and DST tolerance, and inter-packet gap.
 - **Retry and logging**: `/R`, `/W`, log verbosity, and extra raw switches. Every run writes a full robocopy log.
 - **Live output**: progress, file list, a summary that matches robocopy's totals, a breakdown bar of unchanged, copied and removed files, and the exact command line, which you can copy.
+- **Restore wizard**: each profile’s More options menu can restore from its backup destination to the original source or another folder. It always uses safe copy behavior, requires a preview, and then requires typing `CONFIRM` before changing files.
 - **Schedules**: interval, daily, weekly or at log-on. Two runners are available:
   - **RoboXopy (in-app)**: runs while RoboXopy is open or in the notification area. "Start with Windows" keeps it running in the background.
   - **Windows Task Scheduler**: registers a task under `\RoboXopy\` for your account, so it runs even when RoboXopy is closed.
   - A schedule can run as a **preview only**. It never changes files; when it finds pending copies, removals, mismatches, or failures, the profile is marked stale.
   - Scheduled runs and previews queue one at a time by default, including jobs launched by Windows Task Scheduler. Settings can allow two or three simultaneous scheduled operations.
+- **Schedule dashboard**: see every enabled schedule in one place, including active and queued operations, the next run, preview-only schedules, runner choice, concurrency limit, and setup blockers such as paused in-app schedules or an unregistered Task Scheduler task.
 - **Stale sync status**: a timer-ring and **STALE** badge show when a profile has not successfully synced for 24 hours (amber) or 7 days (red). Interval schedules turn amber after one missed interval and red after three. A scheduled preview that finds changes also marks the profile stale until a successful sync.
 - **History** for each profile, with the outcome, trigger, totals, duration and a link to the log. An **Activity** chart shows how much each run copied and removed over time (by size or file count), next to the source's total.
 - **Unusual-run checks**: each run and preview is compared with the profile's recent runs. A source that suddenly shrank, a mirror that would remove far more than usual, or an unusually large copy is pointed out. After a preview like that, **Run** asks for confirmation first.

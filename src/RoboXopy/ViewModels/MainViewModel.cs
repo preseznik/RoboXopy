@@ -48,11 +48,13 @@ public sealed partial class MainViewModel : ObservableObject
             RememberSource(profile.Source);
             Profiles.Add(CreateViewModel(profile));
         }
+        ScheduleDashboard = new ScheduleDashboardViewModel(this);
 
         Profiles.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(HasProfiles));
             OnPropertyChanged(nameof(ShowEmptyState));
+            ScheduleDashboard.Refresh();
         };
 
         SelectedProfile = Profiles.FirstOrDefault(p => p.Id == Host.Settings.LastSelectedProfileId) ?? Profiles.FirstOrDefault();
@@ -66,6 +68,7 @@ public sealed partial class MainViewModel : ObservableObject
     public AppHost Host { get; }
     public SettingsViewModel Settings { get; }
     public UpdateViewModel Updates { get; }
+    public ScheduleDashboardViewModel ScheduleDashboard { get; }
     public DialogViewModel Dialog { get; } = new();
     public BatchImportViewModel Import { get; } = new();
     public ObservableCollection<ProfileViewModel> Profiles { get; } = [];
@@ -76,14 +79,19 @@ public sealed partial class MainViewModel : ObservableObject
     private ProfileViewModel? _selectedProfile;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowProfile))]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowProfile), nameof(ShowScheduleDashboard))]
     private bool _isSettingsOpen;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowProfile), nameof(ShowScheduleDashboard))]
+    private bool _isScheduleDashboardOpen;
 
     [ObservableProperty] private string _searchText = "";
 
     public bool HasProfiles => Profiles.Count > 0;
-    public bool ShowProfile => !IsSettingsOpen && SelectedProfile is not null;
-    public bool ShowEmptyState => !IsSettingsOpen && SelectedProfile is null;
+    public bool ShowProfile => !IsSettingsOpen && !IsScheduleDashboardOpen && SelectedProfile is not null;
+    public bool ShowEmptyState => !IsSettingsOpen && !IsScheduleDashboardOpen && SelectedProfile is null;
+    public bool ShowScheduleDashboard => IsScheduleDashboardOpen;
     public bool AnyRunning => Profiles.Any(p => p.IsRunning);
 
     /// <summary>A dialog or the import wizard covers the window, so the rest of it is disabled.</summary>
@@ -99,6 +107,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (value is null) return;
         IsSettingsOpen = false;
+        IsScheduleDashboardOpen = false;
         Host.Settings.LastSelectedProfileId = value.Id;
         value.Validate();
         value.RefreshExternalState();
@@ -123,6 +132,30 @@ public sealed partial class MainViewModel : ObservableObject
         Dialog.ShowAsync(title, message, confirmText, "Cancel", destructive);
 
     public Task AlertAsync(string title, string message) => Dialog.ShowAsync(title, message, "OK", null);
+
+    public async Task<bool> ConfirmPreflightAsync(SyncProfile profile, bool dryRun)
+    {
+        var preflight = await Task.Run(() => ProfilePreflight.Check(profile));
+        if (preflight.HasErrors)
+        {
+            await AlertAsync(
+                dryRun ? "Preview can't start" : "Run can't start",
+                string.Join(Environment.NewLine, preflight.Findings.Where(finding => finding.Severity == PreflightSeverity.Error)
+                    .Select(finding => finding.Message)));
+            return false;
+        }
+
+        if (!preflight.HasWarnings) return true;
+
+        var warningText = string.Join(Environment.NewLine, preflight.Findings
+            .Where(finding => finding.Severity == PreflightSeverity.Warning)
+            .Select(finding => "• " + finding.Message));
+        return await ConfirmAsync(
+            dryRun ? "Preview preflight warning" : "Run preflight warning",
+            $"{warningText}\n\nCheck the destination before continuing.",
+            dryRun ? "Preview anyway" : "Run anyway",
+            destructive: true);
+    }
 
     public async Task<bool> ConfirmHistoricalSourceDestinationAsync(SyncProfile profile, bool dryRun)
     {
@@ -193,12 +226,14 @@ public sealed partial class MainViewModel : ObservableObject
     public void NotifyRunStateChanged()
     {
         OnPropertyChanged(nameof(AnyRunning));
+        ScheduleDashboard.Refresh();
         RunStateChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public void OnRunFinished(ProfileViewModel profile, RunRecord record)
     {
         NotifyRunStateChanged();
+        ScheduleDashboard.Refresh();
         RunFinished?.Invoke(this, new RunFinishedEventArgs(profile, record));
     }
 
@@ -218,6 +253,7 @@ public sealed partial class MainViewModel : ObservableObject
                 break;
             case nameof(AppSettings.SchedulerPaused):
                 foreach (var p in Profiles) p.RefreshNextRun();
+                ScheduleDashboard.Refresh();
                 RunStateChanged?.Invoke(this, EventArgs.Empty);
                 break;
         }
@@ -234,6 +270,7 @@ public sealed partial class MainViewModel : ObservableObject
     private void OpenSettings()
     {
         if (IsSettingsOpen) return;
+        IsScheduleDashboardOpen = false;
         _profileBeforeSettings = SelectedProfile;
         SelectedProfile = null;
         IsSettingsOpen = true;
@@ -244,6 +281,25 @@ public sealed partial class MainViewModel : ObservableObject
     {
         IsSettingsOpen = false;
         SelectedProfile = _profileBeforeSettings is { } p && Profiles.Contains(p) ? p : Profiles.FirstOrDefault();
+    }
+
+    [RelayCommand]
+    private void OpenScheduleDashboard()
+    {
+        IsSettingsOpen = false;
+        IsScheduleDashboardOpen = true;
+        ScheduleDashboard.Refresh();
+    }
+
+    public void OpenProfile(ProfileViewModel profile)
+    {
+        if (!Profiles.Contains(profile)) return;
+        IsSettingsOpen = false;
+        IsScheduleDashboardOpen = false;
+        SelectedProfile = profile;
+        profile.Validate();
+        profile.RefreshExternalState();
+        _ = profile.EnsureHistoryAsync();
     }
 
     /// <summary>Opens Settings scrolled to the Updates section.</summary>

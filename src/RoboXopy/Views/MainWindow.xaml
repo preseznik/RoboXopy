@@ -206,13 +206,22 @@
             </StackPanel>
 
             <Border Grid.Row="3" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Padding="8,6,8,8">
-                <Button Style="{StaticResource NavButtonStyle}" Command="{Binding OpenSettingsCommand}"
-                        c:Ui.IsSelected="{Binding IsSettingsOpen}" AutomationProperties.Name="Settings">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE713;" Margin="0,0,12,0" />
-                        <TextBlock Text="Settings" />
-                    </StackPanel>
-                </Button>
+                <StackPanel>
+                    <Button Style="{StaticResource NavButtonStyle}" Command="{Binding OpenScheduleDashboardCommand}"
+                            c:Ui.IsSelected="{Binding IsScheduleDashboardOpen}" AutomationProperties.Name="Schedule dashboard">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE823;" Margin="0,0,12,0" />
+                            <TextBlock Text="Schedule dashboard" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource NavButtonStyle}" Command="{Binding OpenSettingsCommand}"
+                            c:Ui.IsSelected="{Binding IsSettingsOpen}" AutomationProperties.Name="Settings">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE713;" Margin="0,0,12,0" />
+                            <TextBlock Text="Settings" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
             </Border>
         </Grid>
 
@@ -225,6 +234,8 @@
                                Visibility="{Binding DataContext.ShowProfile, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
                 <v:SettingsView DataContext="{Binding Settings}"
                                 Visibility="{Binding DataContext.IsSettingsOpen, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
+                <v:ScheduleDashboardView DataContext="{Binding ScheduleDashboard}"
+                                         Visibility="{Binding DataContext.ShowScheduleDashboard, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
                 <v:EmptyStateView Visibility="{Binding ShowEmptyState, Converter={StaticResource BoolToVisibility}}" />
             </Grid>
         </Border>
