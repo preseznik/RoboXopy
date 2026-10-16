@@ -19,6 +19,13 @@ public sealed class RunFinishedEventArgs(ProfileViewModel profile, RunRecord rec
     public RunRecord Record { get; } = record;
 }
 
+public sealed class StaleSyncStatusChangedEventArgs(ProfileViewModel profile, StaleSyncStatus previous, StaleSyncStatus current) : EventArgs
+{
+    public ProfileViewModel Profile { get; } = profile;
+    public StaleSyncStatus Previous { get; } = previous;
+    public StaleSyncStatus Current { get; } = current;
+}
+
 /// <summary>Root view model: the profile list, selection, settings page and dialogs.</summary>
 public sealed partial class MainViewModel : ObservableObject
 {
@@ -42,19 +49,20 @@ public sealed partial class MainViewModel : ObservableObject
         Host.Settings.PropertyChanged += OnSettingsPropertyChanged;
         Dialog.PropertyChanged += OnModalPropertyChanged;
         Import.PropertyChanged += OnModalPropertyChanged;
+        ScheduleDashboard = new ScheduleDashboardViewModel(this);
+        SafetyCenter = new SafetyCenterViewModel(this);
 
         foreach (var profile in Host.Profiles.LoadAll().OrderBy(p => p.SortOrder).ThenBy(p => p.CreatedAt))
         {
             RememberSource(profile.Source);
             Profiles.Add(CreateViewModel(profile));
         }
-        ScheduleDashboard = new ScheduleDashboardViewModel(this);
-
         Profiles.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(HasProfiles));
             OnPropertyChanged(nameof(ShowEmptyState));
             ScheduleDashboard.Refresh();
+            SafetyCenter.Refresh();
         };
 
         SelectedProfile = Profiles.FirstOrDefault(p => p.Id == Host.Settings.LastSelectedProfileId) ?? Profiles.FirstOrDefault();
@@ -69,6 +77,7 @@ public sealed partial class MainViewModel : ObservableObject
     public SettingsViewModel Settings { get; }
     public UpdateViewModel Updates { get; }
     public ScheduleDashboardViewModel ScheduleDashboard { get; }
+    public SafetyCenterViewModel SafetyCenter { get; }
     public DialogViewModel Dialog { get; } = new();
     public BatchImportViewModel Import { get; } = new();
     public ObservableCollection<ProfileViewModel> Profiles { get; } = [];
@@ -79,25 +88,31 @@ public sealed partial class MainViewModel : ObservableObject
     private ProfileViewModel? _selectedProfile;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowProfile), nameof(ShowScheduleDashboard))]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowProfile), nameof(ShowScheduleDashboard), nameof(ShowSafetyCenter))]
     private bool _isSettingsOpen;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowProfile), nameof(ShowScheduleDashboard))]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowProfile), nameof(ShowScheduleDashboard), nameof(ShowSafetyCenter))]
     private bool _isScheduleDashboardOpen;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowProfile), nameof(ShowScheduleDashboard), nameof(ShowSafetyCenter))]
+    private bool _isSafetyCenterOpen;
 
     [ObservableProperty] private string _searchText = "";
 
     public bool HasProfiles => Profiles.Count > 0;
-    public bool ShowProfile => !IsSettingsOpen && !IsScheduleDashboardOpen && SelectedProfile is not null;
-    public bool ShowEmptyState => !IsSettingsOpen && !IsScheduleDashboardOpen && SelectedProfile is null;
+    public bool ShowProfile => !IsSettingsOpen && !IsScheduleDashboardOpen && !IsSafetyCenterOpen && SelectedProfile is not null;
+    public bool ShowEmptyState => !IsSettingsOpen && !IsScheduleDashboardOpen && !IsSafetyCenterOpen && SelectedProfile is null;
     public bool ShowScheduleDashboard => IsScheduleDashboardOpen;
+    public bool ShowSafetyCenter => IsSafetyCenterOpen;
     public bool AnyRunning => Profiles.Any(p => p.IsRunning);
 
     /// <summary>A dialog or the import wizard covers the window, so the rest of it is disabled.</summary>
     public bool IsModalOpen => Dialog.IsOpen || Import.IsOpen;
 
     public event EventHandler<RunFinishedEventArgs>? RunFinished;
+    public event EventHandler<StaleSyncStatusChangedEventArgs>? StaleSyncStatusChanged;
     public event EventHandler? RunStateChanged;
     public event EventHandler? ProfileCreated;
 
@@ -108,6 +123,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (value is null) return;
         IsSettingsOpen = false;
         IsScheduleDashboardOpen = false;
+        IsSafetyCenterOpen = false;
         Host.Settings.LastSelectedProfileId = value.Id;
         value.Validate();
         value.RefreshExternalState();
@@ -190,6 +206,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
 
         Host.Settings.SourceFolderHistory = [.. Host.Settings.SourceFolderHistory, normalized];
+        SafetyCenter.Refresh();
     }
 
     public async Task OfferRestartAsAdministratorAsync(RunRecord record)
@@ -227,6 +244,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(AnyRunning));
         ScheduleDashboard.Refresh();
+        SafetyCenter.Refresh();
         RunStateChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -234,8 +252,12 @@ public sealed partial class MainViewModel : ObservableObject
     {
         NotifyRunStateChanged();
         ScheduleDashboard.Refresh();
+        SafetyCenter.Refresh();
         RunFinished?.Invoke(this, new RunFinishedEventArgs(profile, record));
     }
+
+    public void OnStaleSyncStatusChanged(ProfileViewModel profile, StaleSyncStatus previous, StaleSyncStatus current) =>
+        StaleSyncStatusChanged?.Invoke(this, new StaleSyncStatusChangedEventArgs(profile, previous, current));
 
     // ── Settings ────────────────────────────────────────────────────────
     private void OnSettingsPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -256,6 +278,9 @@ public sealed partial class MainViewModel : ObservableObject
                 ScheduleDashboard.Refresh();
                 RunStateChanged?.Invoke(this, EventArgs.Empty);
                 break;
+            case nameof(AppSettings.SourceFolderHistory):
+                SafetyCenter.Refresh();
+                break;
         }
     }
 
@@ -271,6 +296,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (IsSettingsOpen) return;
         IsScheduleDashboardOpen = false;
+        IsSafetyCenterOpen = false;
         _profileBeforeSettings = SelectedProfile;
         SelectedProfile = null;
         IsSettingsOpen = true;
@@ -287,8 +313,18 @@ public sealed partial class MainViewModel : ObservableObject
     private void OpenScheduleDashboard()
     {
         IsSettingsOpen = false;
+        IsSafetyCenterOpen = false;
         IsScheduleDashboardOpen = true;
         ScheduleDashboard.Refresh();
+    }
+
+    [RelayCommand]
+    private void OpenSafetyCenter()
+    {
+        IsSettingsOpen = false;
+        IsScheduleDashboardOpen = false;
+        IsSafetyCenterOpen = true;
+        SafetyCenter.Refresh();
     }
 
     public void OpenProfile(ProfileViewModel profile)
@@ -296,6 +332,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (!Profiles.Contains(profile)) return;
         IsSettingsOpen = false;
         IsScheduleDashboardOpen = false;
+        IsSafetyCenterOpen = false;
         SelectedProfile = profile;
         profile.Validate();
         profile.RefreshExternalState();

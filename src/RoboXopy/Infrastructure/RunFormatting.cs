@@ -70,6 +70,12 @@ public static class RunFormatting
         return true;
     }
 
+    public static bool HasPreviewDelta(RunRecord record) =>
+        ScheduledPreviewAnalysis.HasDelta(record);
+
+    public static string PreviewDeltaSummary(RunRecord record) =>
+        ScheduledPreviewAnalysis.Summary(record);
+
     public static (string Title, string Message) Notification(RunRecord record)
     {
         var title = $"{record.ProfileName} – {OutcomeTitle(record.Outcome, record.DryRun).ToLowerInvariant()}";

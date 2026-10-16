@@ -52,6 +52,18 @@
                 <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Model.NotifyOnlyOnProblems}"
                           AutomationProperties.Name="Only notify about problems" />
             </c:SettingsCard>
+            <c:SettingsCard Icon="&#xE823;" Header="Notify when a sync becomes stale"
+                            Description="Send one notification when a profile becomes stale or overdue. Disabled by default."
+                            IsEnabled="{Binding Model.ShowNotifications}">
+                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Model.NotifyOnStaleSync}"
+                          AutomationProperties.Name="Notify when sync becomes stale" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="&#xE890;" Header="Notify when a scheduled preview finds changes"
+                            Description="Send one notification for each scheduled preview that finds pending copies, removals, mismatches, or failures. Disabled by default."
+                            IsEnabled="{Binding Model.ShowNotifications}">
+                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Model.NotifyOnScheduledPreviewChanges}"
+                          AutomationProperties.Name="Notify when scheduled preview finds changes" />
+            </c:SettingsCard>
 
             <!-- Scheduling -->
             <TextBlock Text="Scheduling" Style="{StaticResource SectionHeaderStyle}" />

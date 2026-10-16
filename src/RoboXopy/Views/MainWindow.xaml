@@ -214,6 +214,13 @@
                             <TextBlock Text="Schedule dashboard" />
                         </StackPanel>
                     </Button>
+                    <Button Style="{StaticResource NavButtonStyle}" Command="{Binding OpenSafetyCenterCommand}"
+                            c:Ui.IsSelected="{Binding IsSafetyCenterOpen}" AutomationProperties.Name="Safety Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE72E;" Margin="0,0,12,0" />
+                            <TextBlock Text="Safety Center" />
+                        </StackPanel>
+                    </Button>
                     <Button Style="{StaticResource NavButtonStyle}" Command="{Binding OpenSettingsCommand}"
                             c:Ui.IsSelected="{Binding IsSettingsOpen}" AutomationProperties.Name="Settings">
                         <StackPanel Orientation="Horizontal">
@@ -236,6 +243,8 @@
                                 Visibility="{Binding DataContext.IsSettingsOpen, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
                 <v:ScheduleDashboardView DataContext="{Binding ScheduleDashboard}"
                                          Visibility="{Binding DataContext.ShowScheduleDashboard, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
+                <v:SafetyCenterView DataContext="{Binding SafetyCenter}"
+                                    Visibility="{Binding DataContext.ShowSafetyCenter, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
                 <v:EmptyStateView Visibility="{Binding ShowEmptyState, Converter={StaticResource BoolToVisibility}}" />
             </Grid>
         </Border>

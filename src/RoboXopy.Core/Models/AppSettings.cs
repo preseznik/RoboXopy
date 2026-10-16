@@ -10,6 +10,8 @@ public sealed partial class AppSettings : ObservableObject
     [ObservableProperty] private bool _startMinimized = true;
     [ObservableProperty] private bool _showNotifications = true;
     [ObservableProperty] private bool _notifyOnlyOnProblems;
+    [ObservableProperty] private bool _notifyOnStaleSync;
+    [ObservableProperty] private bool _notifyOnScheduledPreviewChanges;
     [ObservableProperty] private bool _schedulerPaused;
     [ObservableProperty] private bool _simultaneousScheduledRuns;
     [ObservableProperty] private int _maxSimultaneousScheduledRuns = 2;

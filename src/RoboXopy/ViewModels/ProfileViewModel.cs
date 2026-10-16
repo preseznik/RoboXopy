@@ -244,6 +244,14 @@ public sealed partial class ProfileViewModel : ObservableObject
     public double StaleProgress => StaleSyncStatus.Progress;
     public string StaleStatusText => StaleSyncStatus.Message;
     public string StaleToolTip => StaleSyncStatus.ToolTip;
+    public RunRecord? LatestScheduledPreview => _statusRecords
+        .Where(record => record.DryRun && (record.Trigger is RunTrigger.Scheduled or RunTrigger.TaskScheduler))
+        .OrderByDescending(record => record.EndedAt > record.StartedAt ? record.EndedAt : record.StartedAt)
+        .FirstOrDefault();
+    public bool HasLatestScheduledPreview => LatestScheduledPreview is not null;
+    public string LatestScheduledPreviewText => LatestScheduledPreview is { } preview
+        ? $"{ScheduleDescriber.FormatRelative((preview.EndedAt > preview.StartedAt ? preview.EndedAt : preview.StartedAt).LocalDateTime, DateTime.Now)} · {RunFormatting.PreviewDeltaSummary(preview)}"
+        : "";
 
     partial void OnSelectedHistoryRunKindFilterChanged(HistoryRunKindFilterOption value) => RefreshFilteredHistory();
     partial void OnSelectedHistoryErrorFilterChanged(HistoryErrorFilterOption value) => RefreshFilteredHistory();
@@ -532,8 +540,20 @@ public sealed partial class ProfileViewModel : ObservableObject
         OnPropertyChanged(nameof(NextRunText));
     }
 
-    private void RefreshStaleStatus() =>
-        StaleSyncStatus = StaleSyncEvaluator.Evaluate(Model, _statusRecords, DateTimeOffset.Now);
+    private void RefreshStaleStatus()
+    {
+        var previous = StaleSyncStatus;
+        var current = StaleSyncEvaluator.Evaluate(Model, _statusRecords, DateTimeOffset.Now);
+        StaleSyncStatus = current;
+        if (previous.Level != current.Level) _main.OnStaleSyncStatusChanged(this, previous, current);
+    }
+
+    private void RefreshLatestScheduledPreview()
+    {
+        OnPropertyChanged(nameof(LatestScheduledPreview));
+        OnPropertyChanged(nameof(HasLatestScheduledPreview));
+        OnPropertyChanged(nameof(LatestScheduledPreviewText));
+    }
 
     // ── History ─────────────────────────────────────────────────────────
     public async Task LoadLatestAsync()
@@ -546,6 +566,7 @@ public sealed partial class ProfileViewModel : ObservableObject
             _statusRecords = records;
             LastRun = records.FirstOrDefault();
             RefreshStaleStatus();
+            RefreshLatestScheduledPreview();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -569,6 +590,7 @@ public sealed partial class ProfileViewModel : ObservableObject
             Chart.SetRecords(records);
             if (records.Count > 0 && !IsRunning) LastRun = records[0];
             RefreshStaleStatus();
+            RefreshLatestScheduledPreview();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -697,6 +719,13 @@ public sealed partial class ProfileViewModel : ObservableObject
         new Views.RestoreWizardWindow(this, _host) { Owner = owner }.ShowDialog();
     }
 
+    [RelayCommand]
+    private void OpenLatestScheduledPreview()
+    {
+        if (LatestScheduledPreview is not { } preview || Application.Current.MainWindow is not { } owner) return;
+        new Views.HistoryRunDetailWindow(new HistoryRunDetailViewModel(preview)) { Owner = owner }.Show();
+    }
+
     /// <summary>Runs the profile in this process. Returns null when it was already running.</summary>
     public async Task<RunRecord?> StartAsync(bool dryRun, RunTrigger trigger, bool confirmedHistoricalSourceDestination = false)
     {
@@ -743,6 +772,7 @@ public sealed partial class ProfileViewModel : ObservableObject
             LastRun = record;
             _statusRecords = [record, .. _statusRecords.Where(existing => existing.Id != record.Id).Take(HistoryStore.MaxRecordsPerProfile - 1)];
             RefreshStaleStatus();
+            RefreshLatestScheduledPreview();
             if (_historyLoaded)
             {
                 History.Insert(0, new HistoryItemViewModel(record));
@@ -852,6 +882,7 @@ public sealed partial class ProfileViewModel : ObservableObject
         Chart.SetRecords([]);
         LastRun = null;
         RefreshStaleStatus();
+        RefreshLatestScheduledPreview();
     }
 
     /// <summary>Scrolls to a run picked on the activity chart and highlights it briefly.</summary>

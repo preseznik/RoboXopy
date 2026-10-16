@@ -231,4 +231,17 @@ public sealed class StorageAndExecutionTests : IDisposable
         Assert.True(loaded.SimultaneousScheduledRuns);
         Assert.Equal(3, loaded.MaxSimultaneousScheduledRuns);
     }
+
+    [Fact]
+    public void Settings_DefaultsStaleAndPreviewNotificationsToOff()
+    {
+        var store = new SettingsStore(_paths);
+        store.Save(new AppSettings { NotifyOnStaleSync = true, NotifyOnScheduledPreviewChanges = true });
+
+        var saved = store.Load();
+        Assert.True(saved.NotifyOnStaleSync);
+        Assert.True(saved.NotifyOnScheduledPreviewChanges);
+        Assert.False(new AppSettings().NotifyOnStaleSync);
+        Assert.False(new AppSettings().NotifyOnScheduledPreviewChanges);
+    }
 }

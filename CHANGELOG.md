@@ -8,6 +8,8 @@ All notable changes to RoboXopy are listed here. The format follows [Keep a Chan
 
 ### Added
 
+- **Opt-in freshness notifications.** Settings can now notify when a sync becomes stale/overdue or when a scheduled preview finds changes; both controls are off by default. Notifications are deduplicated per transition, and profiles show the latest scheduled preview with direct details, run, and restore actions.
+- **Safety Center.** A new navigation view lists recorded historical sources and profiles whose destinations overlap them. It shows active destination acknowledgements and can revoke one immediately, restoring the required confirmation.
 - **Schedule dashboard.** A new navigation view shows enabled schedules, active and queued operations, next runs, runner choice, concurrency limit, preview-only schedules, and blockers such as paused in-app scheduling or an unregistered Task Scheduler task.
 - **Preflight safety checks.** Manual runs and previews now check destination availability and capacity before starting. They block unavailable volumes and request an additional confirmation when capacity cannot be inspected, free space is low, or the operation can delete destination-only files.
 - **Restore wizard.** A profile can now restore its backup destination to the original source or a chosen target through a separate, one-time reverse-copy flow. Restores use safe copy settings, must be previewed first, and require typing `CONFIRM` before files are changed.

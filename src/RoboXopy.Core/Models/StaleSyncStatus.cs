@@ -30,7 +30,7 @@ public static class StaleSyncEvaluator
         var latestPreview = records.FirstOrDefault(IsScheduledPreview);
         var previewHasChanges = latestPreview is not null
             && CompletedAt(latestPreview) > lastSyncAt
-            && HasDelta(latestPreview);
+            && ScheduledPreviewAnalysis.HasDelta(latestPreview);
 
         var verifiedAt = lastSyncAt;
         if (profile.Schedule.PreviewOnly && latestPreview is not null && !previewHasChanges)
@@ -104,10 +104,6 @@ public static class StaleSyncEvaluator
     private static bool IsScheduledPreview(RunRecord record) =>
         record.DryRun && record.Trigger is RunTrigger.Scheduled or RunTrigger.TaskScheduler
         && record.Outcome is RunOutcome.Success or RunOutcome.Warning;
-
-    private static bool HasDelta(RunRecord record) =>
-        record.Summary is { } summary
-        && (summary.Files.Copied > 0 || summary.Files.Extras > 0 || summary.Files.Mismatch > 0 || summary.Files.Failed > 0);
 
     private static DateTimeOffset CompletedAt(RunRecord record) => record.EndedAt > record.StartedAt ? record.EndedAt : record.StartedAt;
 

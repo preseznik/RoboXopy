@@ -13,6 +13,10 @@ public sealed partial class SyncProfile : ObservableObject
     [ObservableProperty] private string _destination = "";
     /// <summary>Normalized risky destination explicitly acknowledged by the user, if it still matches <see cref="Destination"/>.</summary>
     [ObservableProperty] private string? _confirmedHistoricalSourceDestination;
+    /// <summary>The highest freshness severity already notified for the current stale period.</summary>
+    [ObservableProperty] private StaleSyncLevel _lastStaleNotificationLevel;
+    /// <summary>Scheduled preview that last produced a user notification, preventing duplicates after history refreshes.</summary>
+    [ObservableProperty] private Guid? _lastScheduledPreviewNotificationId;
     [ObservableProperty] private int _sortOrder;
     [ObservableProperty] private RobocopyOptions _options = new();
     [ObservableProperty] private ScheduleSettings _schedule = new();

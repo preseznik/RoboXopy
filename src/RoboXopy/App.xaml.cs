@@ -70,6 +70,7 @@ public partial class App : Application
 
         Tray = new TrayIconService(Main, ShowMainWindow, () => _ = ExitApplicationAsync());
         Main.RunFinished += (_, args) => OnRunFinished(args, external: false);
+        Main.StaleSyncStatusChanged += (_, args) => OnStaleSyncStatusChanged(args);
         Main.Updates.UpdateFound += OnUpdateFound;
         Main.Updates.Start();
         Dispatcher.BeginInvoke(NotifyIfUpdated, DispatcherPriority.ApplicationIdle);
@@ -114,11 +115,56 @@ public partial class App : Application
     private void OnRunFinished(RunFinishedEventArgs args, bool external)
     {
         var record = args.Record;
+        if (record.DryRun && (record.Trigger is RunTrigger.Scheduled or RunTrigger.TaskScheduler))
+        {
+            NotifyScheduledPreviewDelta(args.Profile, record);
+            return;
+        }
+
         if (!RunFormatting.ShouldNotify(record, Host.Settings)) return;
         if (!external && record.Trigger == RunTrigger.Manual && _window is { IsVisible: true, IsActive: true }) return;
 
         var (title, message) = RunFormatting.Notification(record);
         Tray?.ShowNotification(title, message, AppIcons.ToolTipIconFor(record.Outcome), () => ShowProfile(args.Profile));
+    }
+
+    private void OnStaleSyncStatusChanged(StaleSyncStatusChangedEventArgs args)
+    {
+        var settings = Host.Settings;
+        if (args.Current.Level == StaleSyncLevel.Fresh)
+        {
+            if (args.Profile.Model.LastStaleNotificationLevel != StaleSyncLevel.Fresh)
+            {
+                args.Profile.Model.LastStaleNotificationLevel = StaleSyncLevel.Fresh;
+            }
+            return;
+        }
+
+        if (!settings.ShowNotifications || !settings.NotifyOnStaleSync
+            || args.Current.Level <= args.Profile.Model.LastStaleNotificationLevel)
+        {
+            return;
+        }
+
+        args.Profile.Model.LastStaleNotificationLevel = args.Current.Level;
+        var title = $"{args.Profile.DisplayName} – {(args.Current.IsOverdue ? "sync overdue" : "sync stale")}";
+        Tray?.ShowNotification(title, args.Current.Message, System.Windows.Forms.ToolTipIcon.Warning, () => ShowProfile(args.Profile));
+    }
+
+    private void NotifyScheduledPreviewDelta(ProfileViewModel profile, RunRecord record)
+    {
+        var settings = Host.Settings;
+        if (!settings.ShowNotifications || !settings.NotifyOnScheduledPreviewChanges
+            || record.Trigger is not (RunTrigger.Scheduled or RunTrigger.TaskScheduler)
+            || !RunFormatting.HasPreviewDelta(record)
+            || profile.Model.LastScheduledPreviewNotificationId == record.Id)
+        {
+            return;
+        }
+
+        profile.Model.LastScheduledPreviewNotificationId = record.Id;
+        Tray?.ShowNotification($"{profile.DisplayName} – scheduled preview found changes",
+            RunFormatting.PreviewDeltaSummary(record), System.Windows.Forms.ToolTipIcon.Warning, () => ShowProfile(profile));
     }
 
     private void OnUpdateFound(object? sender, ReleaseInfo release)

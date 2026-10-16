@@ -313,6 +313,15 @@
                                 </Grid>
                             </Border>
 
+                            <c:SettingsCard Icon="&#xE890;" Header="Latest scheduled preview" Description="{Binding LatestScheduledPreviewText}"
+                                            Visibility="{Binding HasLatestScheduledPreview, Converter={StaticResource BoolToVisibility}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="Open details" Command="{Binding OpenLatestScheduledPreviewCommand}" />
+                                    <Button Content="Run now" Margin="8,0,0,0" Command="{Binding RunCommand}" />
+                                    <Button Content="Restore" Margin="8,0,0,0" Command="{Binding OpenRestoreWizardCommand}" />
+                                </StackPanel>
+                            </c:SettingsCard>
+
                             <TextBlock Text="How to sync" Style="{StaticResource SectionHeaderStyle}" />
                             <UniformGrid Columns="2" Margin="0,0,-8,0">
                                 <RadioButton Style="{StaticResource ChoiceCardStyle}" Content="Copy"
