@@ -74,7 +74,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition x:Name="ContentRow" Height="*" MinHeight="160" />
             <RowDefinition Height="Auto" />
             <RowDefinition x:Name="SplitterRow" Height="Auto" />
@@ -1162,6 +1161,7 @@
                 <!-- Progress -->
                 <Grid Grid.Row="1" Margin="32,0,24,6" Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibility}}">
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
