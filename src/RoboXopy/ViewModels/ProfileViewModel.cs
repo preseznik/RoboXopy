@@ -568,10 +568,32 @@ public sealed partial class ProfileViewModel : ObservableObject
 
     private void RefreshStaleStatus()
     {
+        if (IsRunning || IsRunningExternally)
+        {
+            SetStaleStatus(StaleSyncStatus.Fresh);
+            return;
+        }
+
         var previous = StaleSyncStatus;
         var current = StaleSyncEvaluator.Evaluate(Model, _statusRecords, DateTimeOffset.Now);
+        SetStaleStatus(current, previous);
+    }
+
+    private void SetStaleStatus(StaleSyncStatus current, StaleSyncStatus? previous = null)
+    {
+        previous ??= StaleSyncStatus;
         StaleSyncStatus = current;
         if (previous.Level != current.Level) _main.OnStaleSyncStatusChanged(this, previous, current);
+    }
+
+    partial void OnIsRunningChanged(bool value)
+    {
+        if (value) RefreshStaleStatus();
+    }
+
+    partial void OnIsRunningExternallyChanged(bool value)
+    {
+        if (value) RefreshStaleStatus();
     }
 
     private void RefreshLatestScheduledPreview()
@@ -797,7 +819,8 @@ public sealed partial class ProfileViewModel : ObservableObject
 
         var snapshot = Snapshot();
         var purges = snapshot.Options.Mode == CopyMode.Mirror || (snapshot.Options.Mode == CopyMode.Copy && snapshot.Options.Purge);
-        var session = new RunSessionViewModel(dryRun, trigger, RobocopyCommandBuilder.BuildCommandLine(snapshot, dryRun), purges);
+        var estimate = dryRun ? null : GetProgressEstimate(snapshot);
+        var session = new RunSessionViewModel(dryRun, trigger, RobocopyCommandBuilder.BuildCommandLine(snapshot, dryRun), purges, estimate);
         Session = session;
         IsRunning = true;
         IsRunningExternally = false;
@@ -860,6 +883,19 @@ public sealed partial class ProfileViewModel : ObservableObject
         return record;
     }
 
+    private RunProgressEstimate? GetProgressEstimate(SyncProfile snapshot)
+    {
+        var previewCommand = RobocopyCommandBuilder.BuildCommandLine(snapshot, dryRun: true);
+        var preview = _statusRecords
+            .Where(record => record.DryRun && record.CommandLine == previewCommand && record.Summary is not null)
+            .OrderByDescending(record => record.EndedAt > record.StartedAt ? record.EndedAt : record.StartedAt)
+            .FirstOrDefault();
+        if (preview?.Summary is not { } summary || (summary.Files.Copied <= 0 && summary.Bytes.Copied <= 0)) return null;
+        return new RunProgressEstimate(summary.Files.Copied, summary.Bytes.Copied);
+    }
+
+    internal RunProgressEstimate? GetProgressEstimate() => GetProgressEstimate(Snapshot());
+
     // ── Folder commands ─────────────────────────────────────────────────
     [RelayCommand]
     private void BrowseSource()
@@ -910,7 +946,7 @@ public sealed partial class ProfileViewModel : ObservableObject
     [RelayCommand]
     private void OpenLastLog()
     {
-        if (LastRun?.LogFile is { } file && File.Exists(file)) Shell.Open(file);
+        if (LastRun?.LogFile is { } file && File.Exists(file)) Shell.OpenLog(file);
     }
 
     [RelayCommand]
@@ -928,7 +964,7 @@ public sealed partial class ProfileViewModel : ObservableObject
                 history.Clear(id);
                 if (Directory.Exists(logs))
                 {
-                    foreach (var f in Directory.EnumerateFiles(logs, "*.log"))
+                    foreach (var f in Directory.EnumerateFiles(logs, "*.log*"))
                     {
                         try { File.Delete(f); } catch (IOException) { } catch (UnauthorizedAccessException) { }
                     }

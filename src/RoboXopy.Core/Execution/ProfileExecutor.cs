@@ -104,7 +104,40 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
 
         await using var log = new StreamWriter(new FileStream(record.LogFile, FileMode.Create, FileAccess.Write, FileShare.Read), new UTF8Encoding(true));
         var logSync = new object();
+        var maxLogBytes = Math.Max(1, appSettings.MaxLogSizeMegabytes) * 1024L * 1024L;
+        var loggedBytes = 0L;
+        var logOutputTruncated = false;
         WriteHeader(log, record, profile);
+
+        void WriteLogLine(string line, bool force = false)
+        {
+            var bytes = Encoding.UTF8.GetByteCount(line) + Environment.NewLine.Length;
+            lock (logSync)
+            {
+                if (!force && loggedBytes + bytes > maxLogBytes)
+                {
+                    if (!logOutputTruncated)
+                    {
+                        log.WriteLine($"RoboXopy: raw output was truncated after {appSettings.MaxLogSizeMegabytes:N0} MB.");
+                        logOutputTruncated = true;
+                    }
+                    return;
+                }
+
+                log.WriteLine(line);
+                loggedBytes += bytes;
+            }
+        }
+
+        async Task FinalizeLogAsync()
+        {
+            await log.FlushAsync().ConfigureAwait(false);
+            await log.DisposeAsync().ConfigureAwait(false);
+            if (appSettings.CompressLogs && record.LogFile is { } path)
+            {
+                record.LogFile = LogFileAccess.Compress(path);
+            }
+        }
 
         var stopwatch = Stopwatch.StartNew();
         RobocopyProcessResult result;
@@ -115,7 +148,7 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
                 var parsed = RobocopyOutputParser.Parse(line);
                 if (parsed.Kind != OutputLineKind.Progress)
                 {
-                    lock (logSync) log.WriteLine(line);
+                    WriteLogLine(line);
                 }
 
                 onOutput?.Invoke(parsed);
@@ -123,9 +156,11 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or IOException)
         {
-            lock (logSync) log.WriteLine($"Failed to start robocopy: {ex.Message}");
+            WriteLogLine($"Failed to start robocopy: {ex.Message}", force: true);
             record.HasPermissionIssue = PermissionIssueDetector.IsAccessDenied(ex);
-            return Finish(record, RobocopyExitCode.StartFailed, RunOutcome.Error, $"Failed to start robocopy: {ex.Message}");
+            await FinalizeLogAsync().ConfigureAwait(false);
+            return Finish(record, RobocopyExitCode.StartFailed, RunOutcome.Error, $"Failed to start robocopy: {ex.Message}",
+                retain: appSettings.LogRetentionCount, maxAgeDays: appSettings.LogRetentionDays);
         }
 
         record.Summary = RobocopyOutputParser.ParseSummary(result.Lines.Where(l => RobocopyOutputParser.Parse(l).Kind != OutputLineKind.Progress).ToList());
@@ -140,7 +175,7 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
         }
         if (!request.DryRun && profile.Options.VerifyAfterCopy && (outcome is RunOutcome.Success or RunOutcome.Warning))
         {
-            record.Verification = await VerifyAsync(robocopy, profile, record.PurgesExtras, log, logSync, cancellationToken).ConfigureAwait(false);
+            record.Verification = await VerifyAsync(robocopy, profile, record.PurgesExtras, WriteLogLine, cancellationToken).ConfigureAwait(false);
             if (record.Verification.Status != VerificationStatus.Passed)
             {
                 var severity = FindingSeverity.Warning;
@@ -166,37 +201,34 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
             HasPermissionIssue = record.HasPermissionIssue,
         };
 
-        lock (logSync)
+        WriteLogLine("", force: true);
+        foreach (var finding in record.Findings ?? [])
         {
-            log.WriteLine();
-            foreach (var finding in record.Findings ?? [])
-            {
-                var label = finding.Kind == RunFindingKind.UnreadableFolders ? "skipped"
-                    : finding.Severity == FindingSeverity.Warning ? "unusual" : "note";
-                log.WriteLine($"RoboXopy: {label} – {finding.Message}");
-            }
-            log.WriteLine($"RoboXopy: finished in {stopwatch.Elapsed:hh\\:mm\\:ss} with exit code {result.ExitCode} – {message}");
+            var label = finding.Kind == RunFindingKind.UnreadableFolders ? "skipped"
+                : finding.Severity == FindingSeverity.Warning ? "unusual" : "note";
+            WriteLogLine($"RoboXopy: {label} – {finding.Message}", force: true);
         }
+        WriteLogLine($"RoboXopy: finished in {stopwatch.Elapsed:hh\\:mm\\:ss} with exit code {result.ExitCode} – {message}", force: true);
 
-        return Finish(record, result.ExitCode, outcome, message, retain: appSettings.LogRetentionCount);
+        await FinalizeLogAsync().ConfigureAwait(false);
+        return Finish(record, result.ExitCode, outcome, message, retain: appSettings.LogRetentionCount, maxAgeDays: appSettings.LogRetentionDays);
     }
 
     private static async Task<VerificationResult> VerifyAsync(
         string robocopy,
         SyncProfile profile,
         bool purgesExtras,
-        StreamWriter log,
-        object logSync,
+        Action<string, bool> writeLog,
         CancellationToken cancellationToken)
     {
         var arguments = RobocopyCommandBuilder.BuildArguments(profile, dryRun: true);
-        lock (logSync) log.WriteLine("RoboXopy: starting fast metadata verification (robocopy /L).");
+        writeLog("RoboXopy: starting fast metadata verification (robocopy /L).", true);
         try
         {
             var result = await RobocopyRunner.RunAsync(robocopy, arguments, line =>
             {
                 if (RobocopyOutputParser.Parse(line).Kind == OutputLineKind.Progress) return;
-                lock (logSync) log.WriteLine($"Verification: {line}");
+                writeLog($"Verification: {line}", false);
             }, cancellationToken).ConfigureAwait(false);
             var summary = RobocopyOutputParser.ParseSummary(result.Lines.Where(line => RobocopyOutputParser.Parse(line).Kind != OutputLineKind.Progress).ToList());
             var hasDifferences = HasRemainingDifferences(summary, purgesExtras, result.ExitCode);
@@ -226,7 +258,7 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or IOException)
         {
-            lock (logSync) log.WriteLine($"RoboXopy: fast metadata verification could not start: {ex.Message}");
+            writeLog($"RoboXopy: fast metadata verification could not start: {ex.Message}", true);
             return new VerificationResult
             {
                 Status = VerificationStatus.Failed,
@@ -264,7 +296,7 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
         }
     }
 
-    private RunRecord Finish(RunRecord record, int exitCode, RunOutcome outcome, string message, bool persist = true, int retain = 0)
+    private RunRecord Finish(RunRecord record, int exitCode, RunOutcome outcome, string message, bool persist = true, int retain = 0, int maxAgeDays = 0)
     {
         record.EndedAt = DateTimeOffset.Now;
         record.ExitCode = exitCode;
@@ -276,7 +308,7 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
             try
             {
                 history.Append(record);
-                if (retain > 0) history.ApplyLogRetention(record.ProfileId, retain);
+                if (retain > 0 || maxAgeDays > 0) history.ApplyLogRetention(record.ProfileId, retain, maxAgeDays);
             }
             catch (IOException)
             {

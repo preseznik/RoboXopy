@@ -257,7 +257,7 @@ public sealed class InsightsTests : IDisposable
         Assert.Contains(preview.Findings!, f => f.Kind == RunFindingKind.SourceShrank);
         Assert.Contains(preview.Findings!, f => f.Kind == RunFindingKind.LargeRemoval);
         Assert.True(history.LoadLatest(profile.Id)!.HasWarnings);
-        Assert.Contains("unusual", File.ReadAllText(preview.LogFile!));
+        Assert.Contains("unusual", string.Join(Environment.NewLine, LogFileAccess.ReadLines(preview.LogFile!)));
         Assert.Equal(60, Directory.GetFiles(dst).Length);
     }
 }

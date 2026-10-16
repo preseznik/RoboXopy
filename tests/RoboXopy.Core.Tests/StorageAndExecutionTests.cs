@@ -145,9 +145,10 @@ public sealed class StorageAndExecutionTests : IDisposable
         Assert.NotNull(run.Summary);
         Assert.Equal(2, run.Summary.Files.Copied);
         Assert.True(File.Exists(run.LogFile));
+        Assert.EndsWith(".log.gz", run.LogFile, StringComparison.OrdinalIgnoreCase);
         Assert.NotNull(run.Verification);
         Assert.Equal(VerificationStatus.Passed, run.Verification.Status);
-        Assert.Contains("verification", File.ReadAllText(run.LogFile!), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("verification", string.Join(Environment.NewLine, LogFileAccess.ReadLines(run.LogFile!)), StringComparison.OrdinalIgnoreCase);
         Assert.NotNull(run.DestinationHealth);
         Assert.True(run.DestinationHealth.IsAvailable);
         Assert.NotNull(run.DestinationHealth.AvailableFreeBytes);
@@ -188,7 +189,7 @@ public sealed class StorageAndExecutionTests : IDisposable
             var finding = Assert.Single(preview.Findings!, f => f.Kind == RunFindingKind.UnreadableFolders);
             Assert.Contains(locked, finding.Message);
             Assert.Contains("fix their permissions", finding.Message);
-            Assert.Contains("RoboXopy: skipped – ", File.ReadAllText(preview.LogFile!));
+            Assert.Contains("RoboXopy: skipped – ", string.Join(Environment.NewLine, LogFileAccess.ReadLines(preview.LogFile!)));
         }
         finally
         {
@@ -263,5 +264,20 @@ public sealed class StorageAndExecutionTests : IDisposable
 
         Assert.True(store.Load().AlwaysRunAsAdministrator);
         Assert.False(new AppSettings().AlwaysRunAsAdministrator);
+    }
+
+    [Fact]
+    public void Settings_DefaultsAndPersistsLogControls()
+    {
+        var store = new SettingsStore(_paths);
+        store.Save(new AppSettings { CompressLogs = false, MaxLogSizeMegabytes = 25, LogRetentionDays = 90 });
+
+        var saved = store.Load();
+        Assert.False(saved.CompressLogs);
+        Assert.Equal(25, saved.MaxLogSizeMegabytes);
+        Assert.Equal(90, saved.LogRetentionDays);
+        Assert.True(new AppSettings().CompressLogs);
+        Assert.Equal(10, new AppSettings().MaxLogSizeMegabytes);
+        Assert.Equal(30, new AppSettings().LogRetentionDays);
     }
 }

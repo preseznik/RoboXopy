@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RoboXopy.Core.Models;
 using RoboXopy.Core.Scheduling;
+using RoboXopy.Core.Storage;
 using RoboXopy.Infrastructure;
 using RoboXopy.Views;
 
@@ -44,7 +45,7 @@ public sealed partial class HistoryItemViewModel(RunRecord record) : ObservableO
     [RelayCommand]
     private void OpenLog()
     {
-        if (HasLog) Shell.Open(Record.LogFile!);
+        if (HasLog) Shell.OpenLog(Record.LogFile!);
     }
 
     [RelayCommand]
@@ -73,6 +74,14 @@ internal static class Shell
             Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or FileNotFoundException)
+        {
+        }
+    }
+
+    public static void OpenLog(string path)
+    {
+        try { Open(LogFileAccess.PrepareForShell(path)); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
         }
     }

@@ -74,6 +74,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition x:Name="ContentRow" Height="*" MinHeight="160" />
             <RowDefinition Height="Auto" />
             <RowDefinition x:Name="SplitterRow" Height="Auto" />
@@ -1164,18 +1165,20 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <ProgressBar x:Name="RunProgress" Minimum="0" Maximum="100" Value="{Binding FilePercent, Mode=OneWay, TargetNullValue=0}">
+                    <ProgressBar x:Name="RunProgress" Minimum="0" Maximum="100" Value="{Binding ProgressPercent, Mode=OneWay, TargetNullValue=0}">
                         <ProgressBar.Style>
                             <Style TargetType="ProgressBar" BasedOn="{StaticResource {x:Type ProgressBar}}">
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding FilePercent}" Value="{x:Null}">
+                                    <DataTrigger Binding="{Binding IsProgressIndeterminate}" Value="True">
                                         <Setter Property="IsIndeterminate" Value="True" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </ProgressBar.Style>
                     </ProgressBar>
-                    <TextBlock Grid.Row="1" Text="{Binding CurrentItem}" FontFamily="{StaticResource MonoFont}" FontSize="12" Margin="0,4,0,0"
+                    <TextBlock Grid.Row="1" Text="{Binding ProgressText}" FontSize="12" Margin="0,4,0,0"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Grid.Row="2" Text="{Binding CurrentItem}" FontFamily="{StaticResource MonoFont}" FontSize="12" Margin="0,4,0,0"
                                TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                Visibility="{Binding CurrentItem, Converter={StaticResource NullToVisibility}}" />
                 </Grid>

@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using RoboXopy.Controls;
 using RoboXopy.Core.Models;
 using RoboXopy.Core.Robocopy;
+using RoboXopy.Core.Storage;
 using RoboXopy.Infrastructure;
 
 namespace RoboXopy.ViewModels;
@@ -152,7 +153,7 @@ public sealed partial class HistoryRunDetailViewModel : ObservableObject
             [BreakdownKind.Kept] = [],
         };
 
-        foreach (var text in File.ReadLines(Record.LogFile!))
+        foreach (var text in LogFileAccess.ReadLines(Record.LogFile!))
         {
             var line = RobocopyOutputParser.Parse(text);
             if (line.Kind is not (OutputLineKind.File or OutputLineKind.Directory)) continue;

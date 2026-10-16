@@ -17,6 +17,9 @@ public sealed partial class AppSettings : ObservableObject
     [ObservableProperty] private bool _simultaneousScheduledRuns;
     [ObservableProperty] private int _maxSimultaneousScheduledRuns = 2;
     [ObservableProperty] private int _logRetentionCount = 30;
+    [ObservableProperty] private int _logRetentionDays = 30;
+    [ObservableProperty] private int _maxLogSizeMegabytes = 10;
+    [ObservableProperty] private bool _compressLogs = true;
     [ObservableProperty] private string _robocopyPath = "";
     [ObservableProperty] private bool _checkForUpdates = true;
     [ObservableProperty] private DateTimeOffset? _lastUpdateCheck;
@@ -39,6 +42,16 @@ public sealed partial class AppSettings : ObservableObject
     {
         var clamped = Math.Clamp(value, 1, 3);
         if (value != clamped) MaxSimultaneousScheduledRuns = clamped;
+    }
+
+    partial void OnLogRetentionDaysChanged(int value)
+    {
+        if (value < 1) LogRetentionDays = 1;
+    }
+
+    partial void OnMaxLogSizeMegabytesChanged(int value)
+    {
+        if (value < 1) MaxLogSizeMegabytes = 1;
     }
 
     public string ResolveRobocopyPath() =>

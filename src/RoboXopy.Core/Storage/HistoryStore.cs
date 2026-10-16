@@ -79,14 +79,15 @@ public sealed class HistoryStore(AppPaths paths)
         }
     }
 
-    /// <summary>Deletes the oldest log files so that at most <paramref name="keep"/> remain.</summary>
-    public void ApplyLogRetention(Guid profileId, int keep)
+    /// <summary>Deletes old logs by count and age, including compressed logs.</summary>
+    public void ApplyLogRetention(Guid profileId, int keep, int maxAgeDays = 0)
     {
-        if (keep <= 0) return;
         var dir = paths.ProfileLogsDirectory(profileId);
         if (!Directory.Exists(dir)) return;
 
-        foreach (var file in new DirectoryInfo(dir).GetFiles("*.log").OrderByDescending(f => f.CreationTimeUtc).Skip(keep))
+        var files = new DirectoryInfo(dir).GetFiles("*.log*").OrderByDescending(file => file.CreationTimeUtc).ToList();
+        var cutoff = maxAgeDays > 0 ? DateTime.UtcNow.AddDays(-maxAgeDays) : DateTime.MinValue;
+        foreach (var file in files.Where(file => (keep > 0 && files.IndexOf(file) >= keep) || file.CreationTimeUtc < cutoff))
         {
             try { file.Delete(); } catch (IOException) { } catch (UnauthorizedAccessException) { }
         }

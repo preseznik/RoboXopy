@@ -139,6 +139,21 @@
                 <ComboBox ItemsSource="{Binding RetentionChoices}" SelectedItem="{Binding Model.LogRetentionCount}" MinWidth="120"
                           ItemStringFormat="{}{0} runs" AutomationProperties.Name="Run history to keep" />
             </c:SettingsCard>
+            <c:SettingsCard Icon="&#xE8B7;" Header="Maximum log size"
+                            Description="Raw robocopy output is truncated at this size, while the run summary and findings are always retained.">
+                <ComboBox ItemsSource="{Binding LogSizeChoices}" SelectedItem="{Binding Model.MaxLogSizeMegabytes}" MinWidth="120"
+                          ItemStringFormat="{}{0} MB" AutomationProperties.Name="Maximum log size" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="&#xE787;" Header="Rotate logs after"
+                            Description="Delete logs older than this period, in addition to the run-count retention limit.">
+                <ComboBox ItemsSource="{Binding LogAgeChoices}" SelectedItem="{Binding Model.LogRetentionDays}" MinWidth="120"
+                          ItemStringFormat="{}{0} days" AutomationProperties.Name="Log retention period" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="&#xE9D5;" Header="Compress completed logs"
+                            Description="Store completed logs as .log.gz files. RoboXopy transparently opens and reads compressed logs.">
+                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Model.CompressLogs}"
+                          AutomationProperties.Name="Compress completed logs" />
+            </c:SettingsCard>
             <c:SettingsCard Icon="&#xE8B7;" Header="Data folder" Description="{Binding DataFolder}">
                 <Button Command="{Binding OpenDataFolderCommand}" AutomationProperties.Name="Open data folder">
                     <StackPanel Orientation="Horizontal">

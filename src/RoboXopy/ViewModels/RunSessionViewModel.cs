@@ -29,6 +29,10 @@ public enum OutputSortColumn
 }
 
 public sealed record OutputTypeFilter(string Label, OutputAdditionType? Type);
+public sealed record RunProgressEstimate(long Files, long Bytes)
+{
+    public bool UsesBytes => Bytes > 0;
+}
 
 /// <summary>A line in the live output panel.</summary>
 public sealed class OutputEntry
@@ -100,12 +104,13 @@ public sealed partial class RunSessionViewModel : ObservableObject
     };
     private readonly HashSet<BreakdownKind> _trimmedBreakdownEntries = [];
 
-    public RunSessionViewModel(bool dryRun, RunTrigger trigger, string commandLine, bool purgesExtras = false)
+    public RunSessionViewModel(bool dryRun, RunTrigger trigger, string commandLine, bool purgesExtras = false, RunProgressEstimate? progressEstimate = null)
     {
         DryRun = dryRun;
         Trigger = trigger;
         CommandLine = commandLine;
         _purgesExtras = purgesExtras;
+        ProgressEstimate = progressEstimate;
         ExtrasLabel = !purgesExtras ? "extra" : dryRun ? "to remove" : "removed";
         StartedAt = DateTime.Now;
         _timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(100) };
@@ -130,16 +135,25 @@ public sealed partial class RunSessionViewModel : ObservableObject
     public DateTime StartedAt { get; }
     public string TitleText => DryRun ? "Previewing" : "Running";
     public string OutputRetentionLimitText => MaxEntries.ToString("N0");
+    public RunProgressEstimate? ProgressEstimate { get; }
 
     [ObservableProperty] private bool _isRunning = true;
     [ObservableProperty] private bool _isCancelling;
-    [ObservableProperty] private long _fileCount;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ProgressPercent), nameof(IsProgressIndeterminate), nameof(ProgressText), nameof(EstimatedTimeRemainingText))]
+    private long _fileCount;
     [ObservableProperty] private long _extraCount;
     [ObservableProperty] private long _errorCount;
-    [ObservableProperty] private long _byteCount;
-    [ObservableProperty] private double? _filePercent;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ProgressPercent), nameof(IsProgressIndeterminate), nameof(ProgressText), nameof(EstimatedTimeRemainingText))]
+    private long _byteCount;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ProgressPercent), nameof(IsProgressIndeterminate), nameof(ProgressText), nameof(EstimatedTimeRemainingText))]
+    private double? _filePercent;
     [ObservableProperty] private string? _currentItem;
-    [ObservableProperty] private string _elapsedText = "00:00";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EstimatedTimeRemainingText), nameof(ProgressText))]
+    private string _elapsedText = "00:00";
     [ObservableProperty] private RunOutcome? _outcome;
     [ObservableProperty] private string? _resultTitle;
     [ObservableProperty] private string? _resultMessage;
@@ -185,6 +199,50 @@ public sealed partial class RunSessionViewModel : ObservableObject
     public string FilteredEntriesBytesText => RunFormatting.FormatBytes(FilteredEntriesByteCount);
     public string OutputSortDirectionIcon => IsOutputSortDescending ? "↓" : "↑";
     public string OutputSortDirectionToolTip => IsOutputSortDescending ? "Descending; click for ascending" : "Ascending; click for descending";
+    public bool HasProgressEstimate => ProgressEstimate is not null;
+    public double? ProgressPercent
+    {
+        get
+        {
+            if (ProgressEstimate is { } estimate)
+            {
+                var completed = estimate.UsesBytes ? ByteCount : FileCount;
+                var total = estimate.UsesBytes ? estimate.Bytes : estimate.Files;
+                return Math.Clamp(total > 0 ? completed * 100d / total : 0, 0, 100);
+            }
+
+            return FilePercent;
+        }
+    }
+
+    public bool IsProgressIndeterminate => ProgressPercent is null;
+    public string EstimatedTimeRemainingText
+    {
+        get
+        {
+            if (ProgressPercent is not { } progress || progress <= 0 || progress >= 100) return "";
+            var remaining = TimeSpan.FromTicks((long)(_stopwatch.Elapsed.Ticks * (100 - progress) / progress));
+            return $"≈ {RunFormatting.FormatDuration(remaining)} left";
+        }
+    }
+
+    public string ProgressText
+    {
+        get
+        {
+            if (ProgressEstimate is { } estimate)
+            {
+                var completed = estimate.UsesBytes ? RunFormatting.FormatBytes(ByteCount) : $"{FileCount:N0} files";
+                var total = estimate.UsesBytes ? RunFormatting.FormatBytes(estimate.Bytes) : $"{estimate.Files:N0} files";
+                return $"Estimated {ProgressPercent:0}% · {completed} of {total}" +
+                    (string.IsNullOrEmpty(EstimatedTimeRemainingText) ? "" : $" · {EstimatedTimeRemainingText}");
+            }
+
+            return FilePercent is { } percent
+                ? $"Current file {percent:0}%" + (string.IsNullOrEmpty(EstimatedTimeRemainingText) ? "" : $" · {EstimatedTimeRemainingText}")
+                : "Estimating progress…";
+        }
+    }
     public Brush? OutputListBackground => SelectedBreakdownKind switch
     {
         BreakdownKind.Unchanged => new SolidColorBrush(Color.FromArgb(20, 128, 128, 128)),
@@ -404,7 +462,7 @@ public sealed partial class RunSessionViewModel : ObservableObject
     [RelayCommand]
     private void OpenLog()
     {
-        if (!string.IsNullOrEmpty(LogFile) && File.Exists(LogFile)) Shell.Open(LogFile);
+        if (!string.IsNullOrEmpty(LogFile) && File.Exists(LogFile)) Shell.OpenLog(LogFile);
     }
 
     private void Drain()
