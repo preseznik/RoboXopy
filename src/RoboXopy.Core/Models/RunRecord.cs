@@ -20,6 +20,22 @@ public sealed record SummaryRow
     public long Extras { get; init; }
 }
 
+public enum VerificationStatus
+{
+    Passed,
+    DifferencesFound,
+    Failed,
+}
+
+/// <summary>Outcome of optional post-copy metadata verification.</summary>
+public sealed record VerificationResult
+{
+    public VerificationStatus Status { get; init; }
+    public int ExitCode { get; init; }
+    public string Message { get; init; } = "";
+    public RobocopySummary? Summary { get; init; }
+}
+
 /// <summary>One execution of a profile, persisted to the history store.</summary>
 public sealed class RunRecord
 {
@@ -42,6 +58,7 @@ public sealed class RunRecord
 
     /// <summary>True when the run encountered an access-denied error or unreadable source folder.</summary>
     public bool HasPermissionIssue { get; set; }
+    public VerificationResult? Verification { get; set; }
 
     /// <summary>Unusual aspects of this run compared with earlier runs; null when there is nothing to report.</summary>
     public List<RunFinding>? Findings { get; set; }

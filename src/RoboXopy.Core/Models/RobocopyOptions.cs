@@ -67,6 +67,8 @@ public sealed partial class RobocopyOptions : ObservableObject
     [ObservableProperty] private bool _noDirList;
     [ObservableProperty] private bool _bytes;
     [ObservableProperty] private bool _noProgress;
+    /// <summary>After a real copy, re-run robocopy in list-only mode to check for remaining metadata differences.</summary>
+    [ObservableProperty] private bool _verifyAfterCopy;
     [ObservableProperty] private string _extraArguments = "";
 
     public RobocopyOptions()

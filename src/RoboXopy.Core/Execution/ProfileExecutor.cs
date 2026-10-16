@@ -137,6 +137,23 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
         {
             (record.Findings ??= []).Insert(0, unreadable);
         }
+        if (!request.DryRun && profile.Options.VerifyAfterCopy && (outcome is RunOutcome.Success or RunOutcome.Warning))
+        {
+            record.Verification = await VerifyAsync(robocopy, profile, record.PurgesExtras, log, logSync, cancellationToken).ConfigureAwait(false);
+            if (record.Verification.Status != VerificationStatus.Passed)
+            {
+                var severity = FindingSeverity.Warning;
+                (record.Findings ??= []).Add(new RunFinding
+                {
+                    Kind = RunFindingKind.Verification,
+                    Severity = severity,
+                    Message = record.Verification.Message,
+                });
+                if (record.Verification.ExitCode == RobocopyExitCode.Cancelled) outcome = RunOutcome.Cancelled;
+                else if (outcome == RunOutcome.Success) outcome = RunOutcome.Warning;
+                message += " · " + record.Verification.Message;
+            }
+        }
         record.HasPermissionIssue = PermissionIssueDetector.HasAccessDeniedOutput(result.Lines)
             || record.Findings?.Any(finding => finding.MayRequireElevation) == true;
 
@@ -153,6 +170,76 @@ public sealed class ProfileExecutor(AppPaths paths, HistoryStore history, Func<A
         }
 
         return Finish(record, result.ExitCode, outcome, message, retain: appSettings.LogRetentionCount);
+    }
+
+    private static async Task<VerificationResult> VerifyAsync(
+        string robocopy,
+        SyncProfile profile,
+        bool purgesExtras,
+        StreamWriter log,
+        object logSync,
+        CancellationToken cancellationToken)
+    {
+        var arguments = RobocopyCommandBuilder.BuildArguments(profile, dryRun: true);
+        lock (logSync) log.WriteLine("RoboXopy: starting fast metadata verification (robocopy /L).");
+        try
+        {
+            var result = await RobocopyRunner.RunAsync(robocopy, arguments, line =>
+            {
+                if (RobocopyOutputParser.Parse(line).Kind == OutputLineKind.Progress) return;
+                lock (logSync) log.WriteLine($"Verification: {line}");
+            }, cancellationToken).ConfigureAwait(false);
+            var summary = RobocopyOutputParser.ParseSummary(result.Lines.Where(line => RobocopyOutputParser.Parse(line).Kind != OutputLineKind.Progress).ToList());
+            var hasDifferences = HasRemainingDifferences(summary, purgesExtras, result.ExitCode);
+            if (result.ExitCode >= 0 && result.ExitCode < 8 && !hasDifferences)
+            {
+                return new VerificationResult
+                {
+                    Status = VerificationStatus.Passed,
+                    ExitCode = result.ExitCode,
+                    Summary = summary,
+                    Message = "Fast metadata verification passed.",
+                };
+            }
+
+            var message = result.ExitCode == RobocopyExitCode.Cancelled
+                ? "Fast metadata verification was cancelled."
+                : result.ExitCode < 8
+                    ? "Fast metadata verification found remaining differences."
+                    : "Fast metadata verification could not complete.";
+            return new VerificationResult
+            {
+                Status = result.ExitCode is > 0 and < 8 ? VerificationStatus.DifferencesFound : VerificationStatus.Failed,
+                ExitCode = result.ExitCode,
+                Summary = summary,
+                Message = message,
+            };
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or IOException)
+        {
+            lock (logSync) log.WriteLine($"RoboXopy: fast metadata verification could not start: {ex.Message}");
+            return new VerificationResult
+            {
+                Status = VerificationStatus.Failed,
+                ExitCode = RobocopyExitCode.StartFailed,
+                Message = $"Fast metadata verification could not start: {ex.Message}",
+            };
+        }
+    }
+
+    private static bool HasRemainingDifferences(RobocopySummary? summary, bool purgesExtras, int exitCode)
+    {
+        if (summary is not null)
+        {
+            return summary.Files.Copied > 0
+                || summary.Files.Mismatch > 0
+                || summary.Files.Failed > 0
+                || (purgesExtras && summary.Files.Extras > 0);
+        }
+
+        // /L exit code 2 only describes destination extras, which ordinary Copy mode intentionally keeps.
+        var relevantBits = purgesExtras ? exitCode : exitCode & ~2;
+        return (relevantBits & 7) != 0;
     }
 
     private List<RunFinding>? AnalyzeFindings(RunRecord record)

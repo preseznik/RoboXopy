@@ -8,6 +8,8 @@ All notable changes to RoboXopy are listed here. The format follows [Keep a Chan
 
 ### Added
 
+- **Fast metadata verification.** Profiles can optionally run a filter-aware robocopy dry run after a real copy. Verification results are saved with the run and remaining differences become a visible warning; ordinary Copy-mode destination extras are correctly allowed.
+- **Manual administrator restart.** Settings now offers **Restart as administrator** for protected folders or backup-mode operations; the existing permission-error prompt remains available after a failed run or preview.
 - **Opt-in freshness notifications.** Settings can now notify when a sync becomes stale/overdue or when a scheduled preview finds changes; both controls are off by default. Notifications are deduplicated per transition, and profiles show the latest scheduled preview with direct details, run, and restore actions.
 - **Safety Center.** A new navigation view lists recorded historical sources and profiles whose destinations overlap them. It shows active destination acknowledgements and can revoke one immediately, restoring the required confirmation.
 - **Schedule dashboard.** A new navigation view shows enabled schedules, active and queued operations, next runs, runner choice, concurrency limit, preview-only schedules, and blockers such as paused in-app scheduling or an unregistered Task Scheduler task.

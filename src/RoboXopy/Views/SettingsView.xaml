@@ -39,6 +39,13 @@
                 <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Model.CloseToTray}"
                           AutomationProperties.Name="Keep running when closed" />
             </c:SettingsCard>
+            <c:SettingsCard Icon="&#xE7EF;" Header="Administrator permissions"
+                            Description="Restart RoboXopy with administrator permissions. Windows will ask for approval; running work is stopped before the restart.">
+                <Button Content="Restart as administrator"
+                        Command="{Binding DataContext.RestartAsAdministratorCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                        IsEnabled="{Binding DataContext.IsAdministrator, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBool}}"
+                        AutomationProperties.Name="Restart as administrator" />
+            </c:SettingsCard>
 
             <!-- Notifications -->
             <TextBlock Text="Notifications" Style="{StaticResource SectionHeaderStyle}" />

@@ -10,6 +10,8 @@ public enum RunFindingKind
     LargeChange,
     /// <summary>Robocopy couldn't open some source folders and skipped their contents without reporting an error.</summary>
     UnreadableFolders,
+    /// <summary>Optional post-copy metadata verification found remaining differences or could not run.</summary>
+    Verification,
 }
 
 public enum FindingSeverity

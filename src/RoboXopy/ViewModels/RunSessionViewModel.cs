@@ -353,7 +353,9 @@ public sealed partial class RunSessionViewModel : ObservableObject
             HasWarningFindings = record.HasWarnings;
             FindingsTitle = findings.All(f => f.Kind == RunFindingKind.UnreadableFolders)
                 ? "Some source folders were skipped"
-                : DryRun ? "This preview looks unusual" : "This run looked unusual";
+                : findings.All(f => f.Kind == RunFindingKind.Verification)
+                    ? "Verification needs attention"
+                    : DryRun ? "This preview looks unusual" : "This run looked unusual";
             FindingsText = string.Join(Environment.NewLine, findings.Select(f => f.Message));
         }
     }

@@ -33,9 +33,10 @@ public static class ScheduledRunLimiter
                 {
                     return new Lease(new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 1, FileOptions.DeleteOnClose));
                 }
-                catch (IOException) when (File.Exists(path))
+                catch (IOException)
                 {
-                    // This slot belongs to another scheduled run. Try the next one or wait.
+                    // The slot belongs to another scheduled run, or its DeleteOnClose cleanup is racing
+                    // with this acquisition attempt. Try the next slot or wait and retry.
                 }
             }
 

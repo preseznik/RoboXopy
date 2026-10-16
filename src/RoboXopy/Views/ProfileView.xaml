@@ -493,6 +493,11 @@
                                     <CheckBox Style="{StaticResource FlagCheckBoxStyle}" Content="Timestamps" IsChecked="{Binding Options.CopyDirTimestamps}" />
                                 </WrapPanel>
                             </c:SettingsCard>
+                            <c:SettingsCard Icon="&#xE9D5;" Header="Fast metadata verification"
+                                            Description="After a real copy, run a filter-aware dry run to confirm robocopy sees no remaining changes. This is not a cryptographic hash check.">
+                                <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding Options.VerifyAfterCopy}"
+                                          AutomationProperties.Name="Fast metadata verification" />
+                            </c:SettingsCard>
 
                             <TextBlock Text="Performance" Style="{StaticResource SectionHeaderStyle}" />
                             <c:SettingsCard Icon="&#xE945;" Header="Copy several files at once (/MT)"

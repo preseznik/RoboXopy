@@ -27,6 +27,7 @@ public sealed class StorageAndExecutionTests : IDisposable
         var store = new ProfileStore(_paths);
         var p = new SyncProfile { Name = "Photos", Source = @"C:\Photos", Destination = @"E:\Photos" };
         p.ConfirmedHistoricalSourceDestination = @"E:\Photos";
+        p.Options.VerifyAfterCopy = true;
         p.Options.Mode = CopyMode.Mirror;
         p.Options.ExcludeFiles.Add("*.tmp");
         p.Schedule.Enabled = true;
@@ -41,6 +42,7 @@ public sealed class StorageAndExecutionTests : IDisposable
         Assert.True(loaded.Schedule.Saturday);
         Assert.Equal(p.Schedule.Fingerprint(), loaded.Schedule.Fingerprint());
         Assert.Equal(p.ConfirmedHistoricalSourceDestination, loaded.ConfirmedHistoricalSourceDestination);
+        Assert.True(loaded.Options.VerifyAfterCopy);
         Assert.Equal(p.Id, store.Find(p.ShortId)?.Id);
         Assert.Equal(p.Id, store.Find("photos")?.Id);
         Assert.Null(store.Find("nothing"));
@@ -123,6 +125,7 @@ public sealed class StorageAndExecutionTests : IDisposable
 
         var profile = new SyncProfile { Name = "Test", Source = src, Destination = dst };
         profile.Options.ExcludeFiles.Add("*.tmp");
+        profile.Options.VerifyAfterCopy = true;
 
         var history = new HistoryStore(_paths);
         var executor = new ProfileExecutor(_paths, history, () => new AppSettings());
@@ -141,6 +144,9 @@ public sealed class StorageAndExecutionTests : IDisposable
         Assert.NotNull(run.Summary);
         Assert.Equal(2, run.Summary.Files.Copied);
         Assert.True(File.Exists(run.LogFile));
+        Assert.NotNull(run.Verification);
+        Assert.Equal(VerificationStatus.Passed, run.Verification.Status);
+        Assert.Contains("verification", File.ReadAllText(run.LogFile!), StringComparison.OrdinalIgnoreCase);
         Assert.Contains(lines, l => l.Kind == OutputLineKind.File && l.Name!.EndsWith("a.txt"));
 
         var again = await executor.ExecuteAsync(new RunRequest(profile, RunTrigger.Manual));

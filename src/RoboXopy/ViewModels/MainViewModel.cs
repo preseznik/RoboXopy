@@ -211,7 +211,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public async Task OfferRestartAsAdministratorAsync(RunRecord record)
     {
-        if (!record.HasPermissionIssue || IsAdministrator()) return;
+        if (!record.HasPermissionIssue || IsCurrentAdministrator()) return;
 
         var action = await Dialog.ShowAsync(
             record.DryRun ? "Preview needs additional permission" : "Run needs additional permission",
@@ -228,7 +228,25 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    private static bool IsAdministrator()
+    public bool IsAdministrator => IsCurrentAdministrator();
+
+    [RelayCommand]
+    private async Task RestartAsAdministrator()
+    {
+        if (IsAdministrator)
+        {
+            await AlertAsync("Already running as administrator", "This RoboXopy window already has administrator permissions.");
+            return;
+        }
+
+        var result = await App.Current.RestartAsAdministratorAsync();
+        if (result.Error is not null)
+        {
+            await AlertAsync("Couldn't restart as administrator", result.Error);
+        }
+    }
+
+    private static bool IsCurrentAdministrator()
     {
         using var identity = WindowsIdentity.GetCurrent();
         return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
