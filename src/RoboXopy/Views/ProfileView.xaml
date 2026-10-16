@@ -315,13 +315,29 @@
 
                             <c:SettingsCard Icon="&#xE902;" Header="Group"
                                             Description="Optional group name used for sequential group previews and runs.">
+                                <c:SettingsCard.Visibility>
+                                    <Binding Path="AppSettings.AdvancedMode" Converter="{StaticResource BoolToVisibility}" />
+                                </c:SettingsCard.Visibility>
                                 <TextBox Width="280" Text="{Binding Model.Group, UpdateSourceTrigger=PropertyChanged}"
                                          c:Placeholder.Text="e.g. Work, Home, Offsite"
                                          AutomationProperties.Name="Profile group" />
                             </c:SettingsCard>
 
-                            <c:SettingsCard Icon="&#xE890;" Header="Latest scheduled preview" Description="{Binding LatestScheduledPreviewText}"
-                                            Visibility="{Binding HasLatestScheduledPreview, Converter={StaticResource BoolToVisibility}}">
+                            <c:SettingsCard Icon="&#xE890;" Header="Latest scheduled preview" Description="{Binding LatestScheduledPreviewText}">
+                                <c:SettingsCard.Style>
+                                    <Style TargetType="c:SettingsCard" BasedOn="{StaticResource {x:Type c:SettingsCard}}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding HasLatestScheduledPreview}" Value="True" />
+                                                    <Condition Binding="{Binding AppSettings.AdvancedMode}" Value="True" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </c:SettingsCard.Style>
                                 <StackPanel Orientation="Horizontal">
                                     <Button Content="Open details" Command="{Binding OpenLatestScheduledPreviewCommand}" />
                                     <Button Content="Run now" Margin="8,0,0,0" Command="{Binding RunCommand}" />
@@ -339,10 +355,12 @@
                                              IsChecked="{Binding Options.Mode, Converter={StaticResource EnumToBool}, ConverterParameter=Mirror}" />
                                 <RadioButton Style="{StaticResource ChoiceCardStyle}" Content="Move files"
                                              c:Ui.Icon="&#xE8DE;" c:Ui.Description="Copy, then delete the copied files from the source. Folders stay."
-                                             IsChecked="{Binding Options.Mode, Converter={StaticResource EnumToBool}, ConverterParameter=MoveFiles}" />
+                                             IsChecked="{Binding Options.Mode, Converter={StaticResource EnumToBool}, ConverterParameter=MoveFiles}"
+                                             Visibility="{Binding AppSettings.AdvancedMode, Converter={StaticResource BoolToVisibility}}" />
                                 <RadioButton Style="{StaticResource ChoiceCardStyle}" Content="Move files and folders"
                                              c:Ui.Icon="&#xE8B7;" c:Ui.Description="Copy, then delete both files and folders from the source."
-                                             IsChecked="{Binding Options.Mode, Converter={StaticResource EnumToBool}, ConverterParameter=MoveAll}" />
+                                             IsChecked="{Binding Options.Mode, Converter={StaticResource EnumToBool}, ConverterParameter=MoveAll}"
+                                             Visibility="{Binding AppSettings.AdvancedMode, Converter={StaticResource BoolToVisibility}}" />
                             </UniformGrid>
 
                             <c:InfoBar Margin="0,2,0,4" Message="{Binding Explanation}">
@@ -380,7 +398,7 @@
             </TabItem>
 
             <!-- ── Filters ─────────────────────────────────────────────── -->
-            <TabItem Header="Filters">
+            <TabItem Header="Filters" Visibility="{Binding AppSettings.AdvancedMode, Converter={StaticResource BoolToVisibility}}">
                 <ScrollViewer Style="{StaticResource TabScrollStyle}">
                     <Grid Margin="32,4,32,32">
                         <Grid.ColumnDefinitions>
@@ -513,7 +531,7 @@
             </TabItem>
 
             <!-- ── Copy options ────────────────────────────────────────── -->
-            <TabItem Header="Copy options">
+            <TabItem Header="Copy options" Visibility="{Binding AppSettings.AdvancedMode, Converter={StaticResource BoolToVisibility}}">
                 <ScrollViewer Style="{StaticResource TabScrollStyle}">
                     <Grid Margin="32,4,32,32">
                         <Grid.ColumnDefinitions>
@@ -601,7 +619,7 @@
             </TabItem>
 
             <!-- ── Retry & logging ─────────────────────────────────────── -->
-            <TabItem Header="Retry &amp; logging">
+            <TabItem Header="Retry &amp; logging" Visibility="{Binding AppSettings.AdvancedMode, Converter={StaticResource BoolToVisibility}}">
                 <ScrollViewer Style="{StaticResource TabScrollStyle}">
                     <Grid Margin="32,4,32,32">
                         <Grid.ColumnDefinitions>
@@ -662,7 +680,7 @@
             </TabItem>
 
             <!-- ── Schedule ────────────────────────────────────────────── -->
-            <TabItem Header="Schedule">
+            <TabItem Header="Schedule" Visibility="{Binding AppSettings.AdvancedMode, Converter={StaticResource BoolToVisibility}}">
                 <ScrollViewer Style="{StaticResource TabScrollStyle}">
                     <Grid Margin="32,4,32,32">
                         <Grid.ColumnDefinitions>

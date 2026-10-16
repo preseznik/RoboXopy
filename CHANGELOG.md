@@ -8,6 +8,7 @@ All notable changes to RoboXopy are listed here. The format follows [Keep a Chan
 
 ### Added
 
+- **Simple / Advanced mode.** RoboXopy now starts in a focused Simple mode. An always-visible title-bar switch reveals advanced filter, copy, logging, scheduling, group, and diagnostic controls; the preference is saved.
 - **Compressed, bounded logs.** Completed logs are compressed as `.log.gz` by default and are transparently available from history/details. Settings adds preset controls for a 10 MB maximum raw log size, 30-day rotation, count retention, and compression. Run summaries and findings remain after raw output is capped.
 - **Long-run stale handling.** Active local and externally running profiles no longer become stale mid-run. A successful long-running sync begins its new freshness period when it completes.
 - **Estimated run progress and ETA.** Runs now use the latest matching preview summary to show overall 0–100% estimated completion by bytes or files plus time remaining. Group runs and previews show an aggregate progress bar and ETA, weighted by preview bytes when all members have estimates.

@@ -6,6 +6,6 @@
   -->
   <PropertyGroup>
     <VersionPrefix>1.4.2</VersionPrefix>
-    <BuildNumber>38</BuildNumber>
+    <BuildNumber>39</BuildNumber>
   </PropertyGroup>
 </Project>

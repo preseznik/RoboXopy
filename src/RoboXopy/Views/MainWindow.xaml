@@ -34,6 +34,36 @@
         <StackPanel Grid.ColumnSpan="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="18,0,0,0">
             <Image Source="/Assets/Logo.png" Width="18" Height="18" RenderOptions.BitmapScalingMode="HighQuality" />
             <TextBlock Text="RoboXopy" Margin="12,0,0,1" VerticalAlignment="Center" FontSize="12" />
+            <ToggleButton Margin="14,0,0,0" Padding="10,3,10,4" VerticalAlignment="Center"
+                          IsChecked="{Binding Host.Settings.AdvancedMode}"
+                          ToolTip="Switch between simple essentials and advanced controls"
+                          AutomationProperties.Name="Simple or Advanced mode"
+                          WindowChrome.IsHitTestVisibleInChrome="True">
+                <TextBlock FontSize="11">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="Simple" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource AncestorType=ToggleButton}}" Value="True">
+                                    <Setter Property="Text" Value="Advanced" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <ToggleButton.Style>
+                    <Style TargetType="ToggleButton">
+                        <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                        <Style.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ToggleButton.Style>
+            </ToggleButton>
             <Menu Margin="16,0,0,0" Background="Transparent" VerticalAlignment="Center" WindowChrome.IsHitTestVisibleInChrome="True">
                 <MenuItem Header="Profiles">
                     <MenuItem Header="New profile…" Command="{Binding OpenProfileWizardCommand}" />
@@ -208,21 +238,24 @@
             <Border Grid.Row="3" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Padding="8,6,8,8">
                 <StackPanel>
                     <Button Style="{StaticResource NavButtonStyle}" Command="{Binding OpenScheduleDashboardCommand}"
-                            c:Ui.IsSelected="{Binding IsScheduleDashboardOpen}" AutomationProperties.Name="Schedule dashboard">
+                            c:Ui.IsSelected="{Binding IsScheduleDashboardOpen}" AutomationProperties.Name="Schedule dashboard"
+                            Visibility="{Binding Host.Settings.AdvancedMode, Converter={StaticResource BoolToVisibility}}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE823;" Margin="0,0,12,0" />
                             <TextBlock Text="Schedule dashboard" />
                         </StackPanel>
                     </Button>
                     <Button Style="{StaticResource NavButtonStyle}" Command="{Binding OpenSafetyCenterCommand}"
-                            c:Ui.IsSelected="{Binding IsSafetyCenterOpen}" AutomationProperties.Name="Safety Center">
+                            c:Ui.IsSelected="{Binding IsSafetyCenterOpen}" AutomationProperties.Name="Safety Center"
+                            Visibility="{Binding Host.Settings.AdvancedMode, Converter={StaticResource BoolToVisibility}}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE72E;" Margin="0,0,12,0" />
                             <TextBlock Text="Safety Center" />
                         </StackPanel>
                     </Button>
                     <Button Style="{StaticResource NavButtonStyle}" Command="{Binding OpenProfileGroupsCommand}"
-                            c:Ui.IsSelected="{Binding IsProfileGroupsOpen}" AutomationProperties.Name="Profile groups">
+                            c:Ui.IsSelected="{Binding IsProfileGroupsOpen}" AutomationProperties.Name="Profile groups"
+                            Visibility="{Binding Host.Settings.AdvancedMode, Converter={StaticResource BoolToVisibility}}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE902;" Margin="0,0,12,0" />
                             <TextBlock Text="Profile groups" />

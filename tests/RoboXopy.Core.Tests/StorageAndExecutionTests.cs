@@ -280,4 +280,14 @@ public sealed class StorageAndExecutionTests : IDisposable
         Assert.Equal(10, new AppSettings().MaxLogSizeMegabytes);
         Assert.Equal(30, new AppSettings().LogRetentionDays);
     }
+
+    [Fact]
+    public void Settings_DefaultsAndPersistsSimpleMode()
+    {
+        var store = new SettingsStore(_paths);
+        store.Save(new AppSettings { AdvancedMode = true });
+
+        Assert.True(store.Load().AdvancedMode);
+        Assert.False(new AppSettings().AdvancedMode);
+    }
 }

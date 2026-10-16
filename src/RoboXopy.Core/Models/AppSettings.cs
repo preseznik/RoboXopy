@@ -5,6 +5,7 @@ namespace RoboXopy.Core.Models;
 public sealed partial class AppSettings : ObservableObject
 {
     [ObservableProperty] private AppTheme _theme = AppTheme.System;
+    [ObservableProperty] private bool _advancedMode;
     [ObservableProperty] private bool _closeToTray = true;
     [ObservableProperty] private bool _startWithWindows;
     [ObservableProperty] private bool _startMinimized = true;

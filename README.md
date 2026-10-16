@@ -4,6 +4,8 @@ A Windows desktop app for robocopy. Each sync is a **profile** with a source, a 
 
 Built with WPF on .NET 10 and the Windows 11 (Fluent) theme. Light, dark and system themes are supported.
 
+RoboXopy starts in **Simple** mode, focused on folders, Copy/Mirror, Preview/Run, and History. The always-visible title-bar switch reveals **Advanced** filters, copy/logging/scheduling controls, groups, and diagnostic views when needed.
+
 ## Features
 
 - **Copy modes**: Copy, Mirror (`/MIR`), Move files (`/MOV`) and Move files and folders (`/MOVE`). Destructive modes show warnings.

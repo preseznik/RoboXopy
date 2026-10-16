@@ -297,6 +297,14 @@ public sealed partial class MainViewModel : ObservableObject
             case nameof(AppSettings.Theme):
                 Services.ThemeService.Apply(Host.Settings.Theme);
                 break;
+            case nameof(AppSettings.AdvancedMode):
+                if (!Host.Settings.AdvancedMode)
+                {
+                    IsScheduleDashboardOpen = false;
+                    IsSafetyCenterOpen = false;
+                    IsProfileGroupsOpen = false;
+                }
+                break;
             case nameof(AppSettings.StartWithWindows):
                 Services.StartupRegistration.Apply(Host.Settings.StartWithWindows, Host.ExePath);
                 break;
